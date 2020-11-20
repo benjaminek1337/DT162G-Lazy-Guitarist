@@ -1,6 +1,6 @@
 const express = require("express");
 const path = require("path");
-//const apiRouter = require("./routes/api.js");
+const apiRouter = require("./routes/api.js");
 const bodyparser = require("body-parser");
     
 // Skapa en instans av express
@@ -14,7 +14,7 @@ app.use(bodyparser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Använd router
-//app.use("/api", apiRouter);
+app.use("/api", apiRouter);
     
 // Port för anslutning
 const port = process.env.PORT || 3000;
