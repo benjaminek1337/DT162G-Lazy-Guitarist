@@ -1,9 +1,10 @@
+// Importer
 const express = require("express");
 const path = require("path");
 const apiRouter = require("./routes/api.js");
 const bodyparser = require("body-parser");
     
-// Skapa en instans av express
+// Instansera express
 const app = express();
 
 // Använd bodyparser
