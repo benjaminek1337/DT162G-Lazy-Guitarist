@@ -1,7 +1,8 @@
+const credentials = requrie("./credentials.json")
 const spotifyAPIController = (() =>{
 
-    const clientId = "89d6f0780e1042d3a151359008268f2e";
-    const clientSecret = "6c06f99ed2964c47815858db8df80e00";
+    const clientId = credentials.clientId;
+    const clientSecret = credentials.secretId;
 
     const getToken= async () => {
         const result = await fetch("https://accounts.spotify.com/api/token", {
