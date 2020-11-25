@@ -46,32 +46,47 @@ const spotifyApi = new SpotifyWebApi({
     redirectUri: "http://localhost:3000/callback"
 });
 
+// Client Credential grejs
+const authenticate = async() => {
+    await spotifyApi.clientCredentialsGrant()
+    .then((data) => {
+        spotifyApi.setAccessToken(data.body['access_token']);
+        console.log("Authenticated");
+    }),
+    (err) => {
+        console.log("Sumtin done goofed... error: " + err);
+    }
+}
+
+//authenticate();
+
 app.get("/auth", (req, res) => {
     const authUrl = spotifyApi.createAuthorizeURL(scopes, state)
     res.redirect(authUrl);
 });
 
-let savedurl;
 app.get("/artist", async (req, res) => {
     if(!spotifyApi.getAccessToken()){
-        savedurl = "/artist";
-        return res.redirect("/auth");
+        await authenticate();
     }
     let output;
     spotifyApi.searchTracks('track:Suffer artist:Bad Religion')
-    .then(function(data) {
-        output = data.body.tracks;
+    .then((data) => {
+        output = data.body;
         console.log(data.body);
-    }, function(err) {
+        res.send(output);
+    }, (err) => {
         console.log('Something went wrong!', err);
     });
-    res.json(output);
+    
 });
 
+// Authorization Code grejs
 app.get("/callback", (req, res) => {
     const code = req.query.code
 
-    spotifyApi.authorizationCodeGrant(code).then((data) => {
+    spotifyApi.authorizationCodeGrant(code)
+    .then((data) => {
         console.log('The token expires in ' + data.body['expires_in']);
         console.log('The access token is ' + data.body['access_token']);
         console.log('The refresh token is ' + data.body['refresh_token']);
@@ -80,26 +95,11 @@ app.get("/callback", (req, res) => {
         spotifyApi.setAccessToken(data.body['access_token']);
         spotifyApi.setRefreshToken(data.body['refresh_token']);
         }
-    );
-    setTimeout(() => {res.redirect(savedurl)}, 100);
+    ), (err) => {
+        console.log(err);
+        return redirect("https://www.youtube.com/watch?v=MK6TXMsvgQg");
+    }
+    setTimeout(() => {res.redirect(savedurl)}, 200);
 });
-
-
-
-
-
-// spotifyApi.refreshAccessToken().then(
-// function(data) {
-//     console.log('The access token has been refreshed!');
-
-//     // Save the access token so that it's used in future calls
-//     spotifyApi.setAccessToken(data.body['access_token']);
-// },
-// function(err) {
-//     console.log('Could not refresh access token', err);
-// }
-// );
-
-
 
 
