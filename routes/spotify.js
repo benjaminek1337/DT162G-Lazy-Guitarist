@@ -1,3 +1,4 @@
+const { response } = require("express");
 const express = require("express");
 const router = express.Router();
 const SpotifyWebApi = require("spotify-web-api-node");
@@ -5,7 +6,8 @@ const credentials = require("../data/credentials.json");
 
 const spotifyApi = new SpotifyWebApi({
     clientId: credentials.clientId,
-    clientSecret: credentials.clientSecret
+    clientSecret: credentials.clientSecret,
+    redirectUri: credentials.localhost3000callback
 });
 
 // Client Credential grejs, servern autenticerar sig mot spotify då det behövs.
@@ -48,9 +50,9 @@ router.get("/track=:track", async (req, res) => {
     }
     try { 
         const track = req.params.track;
-        spotifyApi.searchTracks(track)
+        spotifyApi.searchTracks(track, {limit : 3})
         .then((data) => {
-            console.log(data.body);
+            console.log("Searched for: " + track);
             res.send(data.body);
         }, (err) => {
             console.log('Something went wrong!', err);
@@ -66,9 +68,10 @@ router.get("/artist=:artist", async (req, res) => {
         await authenticate();
     }
     try {
-        spotifyApi.searchTracks(req.params.artist)
+        const artist = req.params.artist;
+        spotifyApi.searchArtists(artist, {limit : 3})
         .then((data) => {
-            console.log(data.body);
+            console.log("Searched for: " + artist);
             res.send(data.body);
         }, (err) => {
             console.log('Something went wrong!', err);
@@ -80,9 +83,9 @@ router.get("/artist=:artist", async (req, res) => {
 });
 
 // Authorization Code grejs, lär nog inte använda. TODO isf - callback url, scope och state
-
+const scopes = ["streaming", "user-read-email", "user-read-private"];
 router.get("/auth", (req, res) => {
-    const authUrl = spotifyApi.createAuthorizeURL(scopes, state)
+    const authUrl = spotifyApi.createAuthorizeURL(scopes)
     res.redirect(authUrl);
 });
 
@@ -93,13 +96,19 @@ router.get("/callback", (req, res) => {
     .then((data) => {
         spotifyApi.setAccessToken(data.body['access_token']);
         spotifyApi.setRefreshToken(data.body['refresh_token']);
-        console.log("Authenticated");
+        console.log("User authenticated with access code: " + spotifyApi.getAccessToken());
+        //res.append("Authorization", spotifyApi.getAccessToken());
+        //res.redirect("/index.html");
+        res
+            .status(201)
+            .cookie("access_token", spotifyApi.getAccessToken(), {
+                expires: new Date(Date.now() + 1 * 3600000)
+            })
+            .redirect("/index.html")
         }
     ), (err) => {
         console.log(err);
-        return redirect("https://www.youtube.com/watch?v=MK6TXMsvgQg");
     }
-    setTimeout(() => {res.redirect(savedurl)}, 200);
 });
 
 
