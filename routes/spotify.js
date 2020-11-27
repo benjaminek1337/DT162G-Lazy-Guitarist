@@ -23,6 +23,38 @@ const authenticate = async() => {
     }
 }
 
+// Authorization Code grejs
+const scopes = ["streaming", "user-read-email", "user-read-private", "user-modify-playback-state"];
+let originalUrl;
+router.get("/auth", (req, res) => {
+    originalUrl = req.query.url;
+    const authUrl = spotifyApi.createAuthorizeURL(scopes)
+    res.redirect(authUrl);
+});
+
+router.get("/callback", (req, res) => {
+    const code = req.query.code
+
+    spotifyApi.authorizationCodeGrant(code)
+    .then((data) => {
+        spotifyApi.setAccessToken(data.body['access_token']);
+        spotifyApi.setRefreshToken(data.body['refresh_token']);
+        console.log("User authenticated with access code: " + spotifyApi.getAccessToken());
+        //res.append("Authorization", spotifyApi.getAccessToken());
+        //res.redirect("/index.html");
+        res
+            .status(201)
+            .cookie("access_token", spotifyApi.getAccessToken(), {
+                expires: new Date(Date.now() + 1 * 3600000)
+            })
+            .redirect((originalUrl != undefined) ? "/" + originalUrl : "/");
+            originalUrl = "";
+        }
+    ), (err) => {
+        console.log(err);
+    }
+});
+
 // Alla calls kollar efter en access token först, finns den inte körs autenticerare. Sen söka
 // mot spotify, returnera outputen
 
@@ -81,36 +113,6 @@ router.get("/artist=:artist", async (req, res) => {
     }
     
 });
-
-// Authorization Code grejs, lär nog inte använda. TODO isf - callback url, scope och state
-const scopes = ["streaming", "user-read-email", "user-read-private", "user-modify-playback-state"];
-router.get("/auth", (req, res) => {
-    const authUrl = spotifyApi.createAuthorizeURL(scopes)
-    res.redirect(authUrl);
-});
-
-router.get("/callback", (req, res) => {
-    const code = req.query.code
-
-    spotifyApi.authorizationCodeGrant(code)
-    .then((data) => {
-        spotifyApi.setAccessToken(data.body['access_token']);
-        spotifyApi.setRefreshToken(data.body['refresh_token']);
-        console.log("User authenticated with access code: " + spotifyApi.getAccessToken());
-        //res.append("Authorization", spotifyApi.getAccessToken());
-        //res.redirect("/index.html");
-        res
-            .status(201)
-            .cookie("access_token", spotifyApi.getAccessToken(), {
-                expires: new Date(Date.now() + 1 * 3600000)
-            })
-            .redirect("/");
-        }
-    ), (err) => {
-        console.log(err);
-    }
-});
-
 
 
 module.exports = router;

@@ -1,17 +1,30 @@
 const spotifySearch = document.getElementById("spotify-search");
 const input = document.getElementById("spotify-search-bar");
 let auth_token;
-
+let path = window.location.pathname.substring(1);
 
 // HITTA NÅTT JÄVLA SÄTT ATT FÖRNYA AUTHEN OCH REDIRECTA TILL SAMMA SIDA
-if(document.cookie){
-    setInterval(() => {window.location.href = "/api/spotify/auth"}, 3500000);
-    cooky = document.cookie.split("=");
-    auth_token = cooky[1];
-    console.log(cooky[1]);
-} else {
-    window.location.href = "/api/spotify/auth";
-    setInterval(() => {window.location.href = "/api/spotify/auth";}, 3500000);
+const onInit = () => {
+    getCookie();
+    setInterval(() => {window.location.href = "/api/spotify/auth?url=" + path}, 3500000);
+}
+
+const getCookie = () => {
+    let cookies = document.cookie.split(";");
+    if(cookies){
+        for (let i = 0; i < cookies.length; i++) {
+            const cookiePair = cookies[i].split("=");
+            if(cookiePair[0].trim() == "access_token"){
+                console.log("Authentication Token Found");
+                return auth_token = cookiePair[1];
+            }
+        }
+        console.log("Fetching Authentication Cookie");
+        return window.location.href = "/api/spotify/auth?url=" + path;
+    }else{
+        console.log("Fetching Authentication Cookie");
+        window.location.href = "/api/spotify/auth?url=" + path;
+    }
 }
 
 const inputBoxDelay = (fn, ms) => {
@@ -65,23 +78,8 @@ const fillTrackOptions = (items) => {
             imgContainer.innerHTML = "";
             let img = document.createElement("img");
             img.src = element.album.images[2].url;
-            tracksplice = element.uri.split(":");
             trackUri = element.uri;
-            //trackUri = tracksplice[2];
             imgContainer.appendChild(img);
-
-            // let container = document.getElementsByClassName("playerwindow");
-            // console.log(container);
-            // container.innerHTML = "";
-            // let iframe = document.createElement("iframe");
-            // iframe.setAttribute("src", "https://open.spotify.com/embed/track/" + trackUri);
-            // iframe.style.width = 300;
-            // iframe.style.height = 80;
-            // iframe.setAttribute("allow", "encrypted-media");
-            // iframe.setAttribute("allowtransparency", "true");
-
-            // // allowtransparency="true" allow="encrypted-media"
-            // document.body.appendChild(iframe);
         })
 
         spotifySearch.appendChild(option);
@@ -108,6 +106,9 @@ const getToken = async() => {
 const scopes = ["streaming", "user-read-email", "user-read-private"];
 
 
+window.onload = () => {
+    onInit();
+}
 
 window.onSpotifyWebPlaybackSDKReady = () => {
     let id;
@@ -115,7 +116,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         name: 'Lazy Guitarist Web Player',
         getOAuthToken: cb => { cb(auth_token); }
     });
-    console.log("Hej")
     // Error handling
     player.addListener('initialization_error', ({ message }) => { console.error(message); });
     player.addListener('authentication_error', ({ message }) => { console.error(message); });
@@ -133,6 +133,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
     // Not Ready
     player.addListener('not_ready', ({ device_id }) => {
+        id = device_id;
         console.log('Device ID has gone offline', device_id);
     });
 
@@ -141,9 +142,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
     const btn = document.getElementById("playpause");
     btn.addEventListener("click", () => {
-        player.togglePlay().then(() => {
-            console.log("Playback toggled");
-        })
+        player.togglePlay();
     });
 
     const slider = document.getElementById("volume-slider");
@@ -151,6 +150,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     slider.addEventListener("input", () => {
         player.setVolume(slider.value / 100);
     });
+
+    // Skriv ett sätt att loopa ett tidsintervall av låten
 
     const btnBackward = document.getElementById("btn-backward");
     const btnForward = document.getElementById("btn-forward");
@@ -174,9 +175,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             } 
 
             if(state.position + 30000 < state.duration)
-                player.seek(state.position + 30000).then(() => {
-                    console.log("Forwarded 30 sek");
-                });
+                player.seek(state.position + 30000)
         })
     })
 
@@ -185,7 +184,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
     const playsongbtn = document.getElementById("load-song");
     playsongbtn.addEventListener("click", () => {
-        console.log("attempting to load")
         // https://developer.spotify.com/documentation/web-api/reference/player/start-a-users-playback/ Player reference
         fetch(`https://api.spotify.com/v1/me/player/play?device_id=${id}`, {
             method: 'PUT',
@@ -195,7 +193,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
               'Authorization': `Bearer ${auth_token}`
             },
           });
-          console.log("loaded")
     })
 
 };
