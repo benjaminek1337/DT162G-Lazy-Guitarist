@@ -83,7 +83,7 @@ router.get("/artist=:artist", async (req, res) => {
 });
 
 // Authorization Code grejs, lär nog inte använda. TODO isf - callback url, scope och state
-const scopes = ["streaming", "user-read-email", "user-read-private"];
+const scopes = ["streaming", "user-read-email", "user-read-private", "user-modify-playback-state"];
 router.get("/auth", (req, res) => {
     const authUrl = spotifyApi.createAuthorizeURL(scopes)
     res.redirect(authUrl);
