@@ -3,7 +3,7 @@ const input = document.getElementById("spotify-search-bar");
 let auth_token;
 let path = window.location.pathname.substring(1);
 
-// HITTA NÅTT JÄVLA SÄTT ATT FÖRNYA AUTHEN OCH REDIRECTA TILL SAMMA SIDA
+// TODO - Sätt timeout att förnya auth med timma - duration. Sen interval varje timma.
 const onInit = () => {
     getCookie();
     setInterval(() => {window.location.href = "/api/spotify/auth?url=" + path}, 3500000);
@@ -11,23 +11,19 @@ const onInit = () => {
 
 const getCookie = () => {
     let cookies = document.cookie.split(";");
-    if(cookies){
-        for (let i = 0; i < cookies.length; i++) {
-            const cookiePair = cookies[i].split("=");
-            if(cookiePair[0].trim() == "access_token"){
-                console.log("Authentication Token Found");
-                return auth_token = cookiePair[1];
-            }
+    for (let i = 0; i < cookies.length; i++) {
+        const cookiePair = cookies[i].split("=");
+        if(cookiePair[0].trim() == "access_token"){
+            console.log("Authentication Token Found");
+            return auth_token = cookiePair[1];
         }
-        console.log("Fetching Authentication Cookie");
-        return window.location.href = "/api/spotify/auth?url=" + path;
-    }else{
-        console.log("Fetching Authentication Cookie");
-        window.location.href = "/api/spotify/auth?url=" + path;
     }
+    console.log("Fetching Authentication Cookie");
+    return window.location.href = "/api/spotify/auth?url=" + path;
+
 }
 
-const inputBoxDelay = (fn, ms) => {
+const delay = (fn, ms) => {
     let timer = 0
     return (...args) => {
       clearTimeout(timer)
@@ -35,7 +31,7 @@ const inputBoxDelay = (fn, ms) => {
     }
 }
 
-input.addEventListener("keyup", inputBoxDelay(async (e) => {
+input.addEventListener("keyup", delay(async (e) => {
     let artists, tracks, option;
 
     if(input.value.length > 2){
@@ -98,14 +94,6 @@ const fetchTracks = async(track) => {
     return tracks;
 }
 
-const getToken = async() => {
-    const token = await fetch("/api/spotify/auth");
-    return token;
-}
-
-const scopes = ["streaming", "user-read-email", "user-read-private"];
-
-
 window.onload = () => {
     onInit();
 }
@@ -146,9 +134,9 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     });
 
     const slider = document.getElementById("volume-slider");
-    player.setVolume(slider.value / 100);
+    player.setVolume(slider.value / (100 + ((100 - slider.value) * 2))); // Justeras inte linjärt 0-100 för att ge högre effekt till slidern
     slider.addEventListener("input", () => {
-        player.setVolume(slider.value / 100);
+        player.setVolume(slider.value / (100 + ((100 - slider.value) * 2)));
     });
 
     // Skriv ett sätt att loopa ett tidsintervall av låten
@@ -184,7 +172,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
     const playsongbtn = document.getElementById("load-song");
     playsongbtn.addEventListener("click", () => {
-        // https://developer.spotify.com/documentation/web-api/reference/player/start-a-users-playback/ Player reference
         fetch(`https://api.spotify.com/v1/me/player/play?device_id=${id}`, {
             method: 'PUT',
             body: JSON.stringify({ uris: [trackUri] }),

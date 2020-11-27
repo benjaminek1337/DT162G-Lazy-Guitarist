@@ -24,10 +24,10 @@ const authenticate = async() => {
 }
 
 // Authorization Code grejs
-const scopes = ["streaming", "user-read-email", "user-read-private", "user-modify-playback-state"];
 let originalUrl;
 router.get("/auth", (req, res) => {
     originalUrl = req.query.url;
+    const scopes = ["streaming", "user-read-email", "user-read-private", "user-modify-playback-state"];
     const authUrl = spotifyApi.createAuthorizeURL(scopes)
     res.redirect(authUrl);
 });
@@ -40,8 +40,6 @@ router.get("/callback", (req, res) => {
         spotifyApi.setAccessToken(data.body['access_token']);
         spotifyApi.setRefreshToken(data.body['refresh_token']);
         console.log("User authenticated with access code: " + spotifyApi.getAccessToken());
-        //res.append("Authorization", spotifyApi.getAccessToken());
-        //res.redirect("/index.html");
         res
             .status(201)
             .cookie("access_token", spotifyApi.getAccessToken(), {
