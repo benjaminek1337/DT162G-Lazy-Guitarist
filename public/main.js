@@ -2,12 +2,16 @@ const spotifySearch = document.getElementById("spotify-search");
 const input = document.getElementById("spotify-search-bar");
 let auth_token;
 
+
+// HITTA NÅTT JÄVLA SÄTT ATT FÖRNYA AUTHEN OCH REDIRECTA TILL SAMMA SIDA
 if(document.cookie){
+    setInterval(() => {window.location.href = "/api/spotify/auth"}, 3500000);
     cooky = document.cookie.split("=");
     auth_token = cooky[1];
     console.log(cooky[1]);
 } else {
     window.location.href = "/api/spotify/auth";
+    setInterval(() => {window.location.href = "/api/spotify/auth";}, 3500000);
 }
 
 const inputBoxDelay = (fn, ms) => {

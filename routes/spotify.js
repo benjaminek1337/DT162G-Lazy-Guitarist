@@ -104,7 +104,7 @@ router.get("/callback", (req, res) => {
             .cookie("access_token", spotifyApi.getAccessToken(), {
                 expires: new Date(Date.now() + 1 * 3600000)
             })
-            .redirect("/index.html")
+            .redirect("/");
         }
     ), (err) => {
         console.log(err);
