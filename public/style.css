@@ -1,7 +1,11 @@
 .player-area{
     background-color: rgb(185, 156, 156);
-    width:175px;
+    width:173px;
     padding:10px;
+}
+
+#img-container{
+    margin-bottom:10px;
 }
 
 #btn-playpause.playing{
@@ -126,7 +130,7 @@
 }
 
 .song-duration{
-    width:165px;
+    width:98%;
 }
 
 .duration-slider {

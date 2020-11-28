@@ -14,6 +14,7 @@ let path = window.location.pathname.substring(1);
 // TODO - Sätt timeout att förnya auth med timma - duration. Sen interval varje timma. Kolla expiration
 const onInit = () => {
     getCookie();
+    durationSlider.value = 0;
 }
 
 const getCookie = () => {
@@ -58,7 +59,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     // Playback status updates
     player.addListener('player_state_changed', state => { 
         console.log(state); 
-        playBackState(state);
+        playingOrPausedEvents(state);
     });
 
     input.addEventListener("keyup", delay(async (e) => {
@@ -87,7 +88,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 const imgContainer = document.getElementById("img-container");
                 imgContainer.innerHTML = "";
                 let img = document.createElement("img");
-                img.setAttribute("height", 175)
+                img.setAttribute("height", 173)
                 img.src = element.album.images[1].url;
                 trackUri = element.uri;
                 imgContainer.appendChild(img);
@@ -123,12 +124,12 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     btnPlay.addEventListener("click", () => {
         player.getCurrentState().then(state => {
 
-            playBackState(state);
+            playingOrPausedEvents(state);
         })
         player.togglePlay();
     });
 
-    function playBackState(state){
+    function playingOrPausedEvents(state){
         if(state.paused){
             console.log("paused")
             btnPlay.classList.remove("playing");
@@ -138,11 +139,18 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             console.log("playing")
             btnPlay.classList.remove("paused");
             btnPlay.classList.add("playing");
-            interval = setInterval(() => {
-                player.getCurrentState().then(state => {
-                    durationSlider.value = state.position;
-                })
-            }, 300)
+            if(state.position < state.duration){
+                interval = setInterval(() => {
+                    player.getCurrentState().then(state => {
+                        durationSlider.value = state.position;
+                    })
+                }, 300)
+            } else {
+                clearInterval(interval);
+                durationSlider.value = 0;
+                btnPlay.classList.remove("playing");
+                btnPlay.classList.add("paused")
+            }
         }
     }
     
@@ -177,31 +185,28 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     })
 
     // Skriv ett sätt att loopa ett tidsintervall av låten
+    // Förslagsvis - knappen till höger öppnar en input, inputen tar emot sekunder och kör ett interval på så länge.
+    // Knappen avbryter även repeaten sen.
 
     btnRepeatThirty.addEventListener("click", () => {
-        player.getCurrentState().then(state => {
-            if(!state){
-                return console.log("Nope");
-            } 
-
-            if(state.position > 30000)
-                player.seek(state.position - 30000);
-            else
-                player.seek(0);
-        })
+        reverseForMs(30000);
     })
 
     btnRepeatTen.addEventListener("click", () => {
+        reverseForMs(10000);
+    })
+
+    function reverseForMs(time){
         player.getCurrentState().then(state => {
             if(!state){
                 return console.log("Nope");
             } 
-            if(state.position > 10000)
-                player.seek(state.position - 10000);
+            if(state.position > time)
+                player.seek(state.position - time);
             else
                 player.seek(0);
         })
-    })
+    }
 
     function playSong(uri){
         fetch(`https://api.spotify.com/v1/me/player/play?device_id=${id}`, {
@@ -220,7 +225,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             player.getCurrentState().then(state => {
                 console.log(state.duration);
                 durationSlider.setAttribute("max", state.duration);
-                playBackState(state);
+                playingOrPausedEvents(state);
             })
         }, 300)
     } 
