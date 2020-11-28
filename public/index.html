@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TEST I MIN RÖV</title>
+    <link rel="stylesheet" href="style.css">
     <script src="./main.js" defer></script>
     <script src="https://sdk.scdn.co/spotify-player.js"></script>
 </head>
@@ -12,16 +13,23 @@
     <input type="text" list="spotify-search" id="spotify-search-bar">
     <ul id="spotify-search">
     </ul>
-    <div id="img-container">
-
-    </div>
-    <button id="playpause">Spela/Pausa</button>
-    <button id="load-song">Ladda in en låt</button>
-    <input type="range" min="0" max="100" value="100" class="slider" id="volume-slider">
-    <button id="btn-backward">Backa 30 sek</button>
-    <button id="btn-forward">Gå framåt 30 sek</button>
-    <div class="playerwindow">
-
+    
+    <div class="player-area">
+        <div id="img-container">
+    
+        </div>
+        <button id="btn-playpause" class="paused"></button>
+    
+        <button class="btn-repeat-thirty"id="btn-repeat-thirty"></button>
+        <button class="btn-repeat-ten"id="btn-repeat-ten"></button>
+        <button class="btn-repeat-custom"id="btn-repeat-custom"></button>
+        <div class="song-duration">
+            <input type="range" min="0" value="0" max="100" class="duration-slider" id="song-duration-slider">
+        </div>
+        <div class="volume-area">
+            <button id="vol" class="high"></button>
+            <input type="range" min="0" max="100" value="80" class="volume-slider" id="volume-slider">
+        </div>
     </div>
 
 </body>

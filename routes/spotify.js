@@ -80,7 +80,7 @@ router.get("/track=:track", async (req, res) => {
     }
     try { 
         const track = req.params.track;
-        spotifyApi.searchTracks(track, {limit : 3})
+        spotifyApi.searchTracks(track, {limit : 5})
         .then((data) => {
             console.log("Searched for: " + track);
             res.send(data.body);

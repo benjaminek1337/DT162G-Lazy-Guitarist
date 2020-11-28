@@ -1,12 +1,19 @@
 const spotifySearch = document.getElementById("spotify-search");
 const input = document.getElementById("spotify-search-bar");
+const btnPlay = document.getElementById("btn-playpause");
+const btnVol = document.getElementById("vol");
+const btnRepeatThirty = document.getElementById("btn-repeat-thirty");
+const btnRepeatTen = document.getElementById("btn-repeat-ten");
+const durationSlider = document.getElementById("song-duration-slider");
+const volumeSlider = document.getElementById("volume-slider");
+
+
 let auth_token;
 let path = window.location.pathname.substring(1);
 
-// TODO - Sätt timeout att förnya auth med timma - duration. Sen interval varje timma.
+// TODO - Sätt timeout att förnya auth med timma - duration. Sen interval varje timma. Kolla expiration
 const onInit = () => {
     getCookie();
-    setInterval(() => {window.location.href = "/api/spotify/auth?url=" + path}, 3500000);
 }
 
 const getCookie = () => {
@@ -18,7 +25,7 @@ const getCookie = () => {
             return auth_token = cookiePair[1];
         }
     }
-    console.log("Fetching Authentication Cookie");
+    console.log("Fetching Authentication Token");
     return window.location.href = "/api/spotify/auth?url=" + path;
 
 }
@@ -29,69 +36,6 @@ const delay = (fn, ms) => {
       clearTimeout(timer)
       timer = setTimeout(fn.bind(this, ...args), ms || 0)
     }
-}
-
-input.addEventListener("keyup", delay(async (e) => {
-    let artists, tracks, option;
-
-    if(input.value.length > 2){
-        artists = await fetchArtists(input.value);
-        tracks = await fetchTracks(input.value);
-        spotifySearch.innerHTML = "";
-        if(tracks.tracks.items.length > 0){
-            option = document.createElement("li");
-            option.innerHTML = "Spår:";
-            spotifySearch.appendChild(option);
-            fillTrackOptions(tracks.tracks.items);
-        }
-        if(artists.artists.items.length > 0){
-            option = document.createElement("li");
-            option.innerHTML = "Artister:";
-            spotifySearch.appendChild(option);
-            fillArtistOptions(artists.artists.items);
-        }
-    }
-}, 300))
-
-const fillArtistOptions = (items) => {
-    for (let i = 0; i < items.length; i++) {
-        const element = items[i];
-        option = document.createElement("li");
-        option.innerHTML = element.name;
-        spotifySearch.appendChild(option);
-    }
-}
-let trackUri;
-const fillTrackOptions = (items) => {
-    for (let i = 0; i < items.length; i++) {
-        const element = items[i];
-        option = document.createElement("li");
-        option.innerHTML = element.name + " - " + element.artists[0].name;
-
-        option.style.color = "purple";
-        option.addEventListener("click", async () => {
-            const imgContainer = document.getElementById("img-container");
-            imgContainer.innerHTML = "";
-            let img = document.createElement("img");
-            img.src = element.album.images[2].url;
-            trackUri = element.uri;
-            imgContainer.appendChild(img);
-        })
-
-        spotifySearch.appendChild(option);
-    }
-}
-
-const fetchArtists = async(artist) => {
-    const response = await fetch("/api/spotify/artist=" + artist);
-    const artists = await response.json();
-    return artists;
-}
-
-const fetchTracks = async(track) => {
-    const response = await fetch("/api/spotify/track=" + track);
-    const tracks = await response.json();
-    return tracks;
 }
 
 window.onload = () => {
@@ -105,81 +49,179 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         getOAuthToken: cb => { cb(auth_token); }
     });
     // Error handling
-    player.addListener('initialization_error', ({ message }) => { console.error(message); });
-    player.addListener('authentication_error', ({ message }) => { console.error(message); });
-    player.addListener('account_error', ({ message }) => { console.error(message); });
+    // player.addListener('initialization_error', ({ message }) => { console.error(message); });
+    // player.addListener('authentication_error', ({ message }) => { console.error(message); });
+    // player.addListener('account_error', ({ message }) => { console.error(message); });
     player.addListener('playback_error', ({ message }) => { console.error(message); });
+    
 
     // Playback status updates
-    player.addListener('player_state_changed', state => { console.log(state); });
+    player.addListener('player_state_changed', state => { 
+        console.log(state); 
+        playBackState(state);
+    });
+
+    input.addEventListener("keyup", delay(async (e) => {
+        let tracks, option;
+    
+        if(input.value.length > 2){
+            tracks = await fetchTracks(input.value);
+            spotifySearch.innerHTML = "";
+            if(tracks.tracks.items.length > 0){
+                option = document.createElement("li");
+                option.innerHTML = "Låtar:";
+                spotifySearch.appendChild(option);
+                fillTrackOptions(tracks.tracks.items);
+            }
+        }
+    }, 300))
+    
+    const fillTrackOptions = (items) => {
+        for (let i = 0; i < items.length; i++) {
+            const element = items[i];
+            option = document.createElement("li");
+            option.innerHTML = element.name + " - " + element.artists[0].name;
+    
+            option.style.color = "purple";
+            option.addEventListener("click", async () => {
+                const imgContainer = document.getElementById("img-container");
+                imgContainer.innerHTML = "";
+                let img = document.createElement("img");
+                img.setAttribute("height", 175)
+                img.src = element.album.images[1].url;
+                trackUri = element.uri;
+                imgContainer.appendChild(img);
+                playSong(element.uri);
+            })
+    
+            spotifySearch.appendChild(option);
+        }
+    }
+    
+    const fetchTracks = async(track) => {
+        const response = await fetch("/api/spotify/track=" + track);
+        const tracks = await response.json();
+        return tracks;
+    }
 
     // Ready
     player.addListener('ready', ({ device_id }) => {
         id = device_id;
         console.log('Ready with Device ID', device_id);
     });
-
+    
     // Not Ready
     player.addListener('not_ready', ({ device_id }) => {
         id = device_id;
         console.log('Device ID has gone offline', device_id);
     });
-
+    
     // Connect to the player!
     player.connect();
 
-    const btn = document.getElementById("playpause");
-    btn.addEventListener("click", () => {
+    let interval;
+    btnPlay.addEventListener("click", () => {
+        player.getCurrentState().then(state => {
+
+            playBackState(state);
+        })
         player.togglePlay();
     });
 
-    const slider = document.getElementById("volume-slider");
-    player.setVolume(slider.value / (100 + ((100 - slider.value) * 2))); // Justeras inte linjärt 0-100 för att ge högre effekt till slidern
-    slider.addEventListener("input", () => {
-        player.setVolume(slider.value / (100 + ((100 - slider.value) * 2)));
+    function playBackState(state){
+        if(state.paused){
+            console.log("paused")
+            btnPlay.classList.remove("playing");
+            btnPlay.classList.add("paused");
+            clearInterval(interval);
+        } else {
+            console.log("playing")
+            btnPlay.classList.remove("paused");
+            btnPlay.classList.add("playing");
+            interval = setInterval(() => {
+                player.getCurrentState().then(state => {
+                    durationSlider.value = state.position;
+                })
+            }, 300)
+        }
+    }
+    
+    durationSlider.addEventListener("input", () => {
+        player.getCurrentState().then(state => {
+            if(state){
+                player.seek(durationSlider.value);
+            }
+        })
+    })
+    
+    player.setVolume(volumeSlider.value / (100 + ((100 - volumeSlider.value) * 2))); // Justeras inte linjärt 0-100 för att ge högre effekt till slidern
+    volumeSlider.addEventListener("input", () => {
+        player.setVolume(volumeSlider.value / (100 + ((100 - volumeSlider.value) * 2)));
+        if(volumeSlider.value > 50){
+            btnVol.className = ""
+            btnVol.classList.add("high")
+        } else if(volumeSlider.value > 0 && volumeSlider.value <= 50) {
+            btnVol.className = ""
+            btnVol.classList.add("low")
+        } else{
+            btnVol.className = ""
+            btnVol.classList.add("no")
+        }
     });
+
+    btnVol.addEventListener("click", () =>{
+        player.setVolume(0);
+        btnVol.className = ""
+        btnVol.classList.add("no")
+        volumeSlider.value = 0;
+    })
 
     // Skriv ett sätt att loopa ett tidsintervall av låten
 
-    const btnBackward = document.getElementById("btn-backward");
-    const btnForward = document.getElementById("btn-forward");
-    btnBackward.addEventListener("click", () => {
+    btnRepeatThirty.addEventListener("click", () => {
         player.getCurrentState().then(state => {
             if(!state){
                 return console.log("Nope");
             } 
-            console.log(state.position);
-            console.log(-30 * 1000);
+
             if(state.position > 30000)
                 player.seek(state.position - 30000);
             else
                 player.seek(0);
         })
     })
-    btnForward.addEventListener("click", () => {
+
+    btnRepeatTen.addEventListener("click", () => {
         player.getCurrentState().then(state => {
             if(!state){
                 return console.log("Nope");
             } 
-
-            if(state.position + 30000 < state.duration)
-                player.seek(state.position + 30000)
+            if(state.position > 10000)
+                player.seek(state.position - 10000);
+            else
+                player.seek(0);
         })
     })
 
-    //Spola fram 30 sek, player.seek(30 * 1000)
-    //Spola bak 30 sek, player.seek(-30 * 1000) fixa så att de båda inte kan överskrida total eller under 0
-
-    const playsongbtn = document.getElementById("load-song");
-    playsongbtn.addEventListener("click", () => {
+    function playSong(uri){
         fetch(`https://api.spotify.com/v1/me/player/play?device_id=${id}`, {
             method: 'PUT',
-            body: JSON.stringify({ uris: [trackUri] }),
+            body: JSON.stringify({ uris: [uri] }),
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${auth_token}`
             },
-          });
-    })
-
+        });
+        btnPlay.classList.remove("paused");
+        btnPlay.classList.add("playing");
+        if(interval != undefined)
+            clearInterval(interval);
+        setTimeout(() => {
+            player.getCurrentState().then(state => {
+                console.log(state.duration);
+                durationSlider.setAttribute("max", state.duration);
+                playBackState(state);
+            })
+        }, 300)
+    } 
 };
