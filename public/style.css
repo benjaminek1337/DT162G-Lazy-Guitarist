@@ -1,6 +1,6 @@
 .player-area{
     background-color: rgb(185, 156, 156);
-    width:173px;
+    width:200px;
     padding:10px;
 }
 
@@ -13,8 +13,8 @@
     background-size: cover;
     cursor: pointer;
     border:none;
-    height:40px;
-    width:40px;
+    height:47px;
+    width:47px;
 }
 
 #btn-playpause.paused{
@@ -22,8 +22,8 @@
     background-size: cover;
     cursor: pointer;
     border:none;
-    height:40px;
-    width:40px;
+    height:47px;
+    width:47px;
 }
 
 #vol{
@@ -74,8 +74,8 @@
     background-size: cover;
     cursor: pointer;
     border:none;
-    height:40px;
-    width:40px;
+    height:47px;
+    width:47px;
 }
 
 .btn-repeat-ten{
@@ -83,8 +83,8 @@
     background-size: cover;
     cursor: pointer;
     border:none;
-    height:40px;
-    width:40px;
+    height:47px;
+    width:47px;
 }
 
 .btn-repeat-custom{
@@ -92,12 +92,12 @@
     background-size: cover;
     cursor: pointer;
     border:none;
-    height:40px;
-    width:40px;
+    height:47px;
+    width:47px;
 }
 
 .volume-area {
-    width:170px;
+    width:200px;
     align-items: center;
 }
 
@@ -105,7 +105,7 @@
     position: relative;
     top:4px;
     -webkit-appearance: none;
-    width: 65%;
+    width: 69%;
     height: 5px;
     background: white;
     border-width: 1px;

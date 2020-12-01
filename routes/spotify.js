@@ -109,7 +109,25 @@ router.get("/artist=:artist", async (req, res) => {
     } catch (error) {
         console.log(error);
     }
-    
+});
+
+router.get("/trackUri=:uri", async (req, res) => {
+    if(!spotifyApi.getAccessToken()){
+        await authenticate();
+    }
+    try {
+        const uri = req.params.uri;
+        spotifyApi.getTrack(uri)
+        .then((data) => {
+            console.log("Searched for: " + uri);
+            res.send(data.body);
+        }, (err) => {
+            console.log('Something went wrong!', err);
+        });   
+    } catch (error) {
+        console.log(error);
+    }
+
 });
 
 

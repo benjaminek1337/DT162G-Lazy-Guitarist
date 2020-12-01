@@ -1,0 +1,4 @@
+
+<input type="text" class="form__input" placeholder="Sök låt..." (keyup)="searchTrack($event.target.value)">
+<app-track-item *ngFor="let track of tracks" [track]="track" (sendTrack)="getTrack($event)">
+</app-track-item>
