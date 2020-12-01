@@ -45,6 +45,8 @@ window.onload = () => {
 
 window.onSpotifyWebPlaybackSDKReady = () => {
     let id;
+    let interval;
+
     const player = new Spotify.Player({
         name: 'Lazy Guitarist Web Player',
         getOAuthToken: cb => { cb(auth_token); }
@@ -62,6 +64,25 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         playingOrPausedEvents(state);
     });
 
+    // Ready
+    player.addListener('ready', ({ device_id }) => {
+        id = device_id;
+        console.log('Ready with Device ID', device_id);
+    });
+    
+    // Not Ready
+    player.addListener('not_ready', ({ device_id }) => {
+        id = device_id;
+        console.log('Device ID has gone offline', device_id);
+    });
+
+    btnPlay.addEventListener("click", () => {
+        player.getCurrentState().then(state => {
+            playingOrPausedEvents(state);
+        })
+        player.togglePlay();
+    });
+
     input.addEventListener("keyup", delay(async (e) => {
         let tracks, option;
     
@@ -77,83 +98,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         }
     }, 300))
     
-    const fillTrackOptions = (items) => {
-        for (let i = 0; i < items.length; i++) {
-            const element = items[i];
-            option = document.createElement("li");
-            option.innerHTML = element.name + " - " + element.artists[0].name;
-    
-            option.style.color = "purple";
-            option.addEventListener("click", async () => {
-                const imgContainer = document.getElementById("img-container");
-                imgContainer.innerHTML = "";
-                let img = document.createElement("img");
-                img.setAttribute("height", 173)
-                img.src = element.album.images[1].url;
-                trackUri = element.uri;
-                imgContainer.appendChild(img);
-                playSong(element.uri);
-            })
-    
-            spotifySearch.appendChild(option);
-        }
-    }
-    
-    const fetchTracks = async(track) => {
-        const response = await fetch("/api/spotify/track=" + track);
-        const tracks = await response.json();
-        return tracks;
-    }
-
-    // Ready
-    player.addListener('ready', ({ device_id }) => {
-        id = device_id;
-        console.log('Ready with Device ID', device_id);
-    });
-    
-    // Not Ready
-    player.addListener('not_ready', ({ device_id }) => {
-        id = device_id;
-        console.log('Device ID has gone offline', device_id);
-    });
-    
-    // Connect to the player!
-    player.connect();
-
-    let interval;
-    btnPlay.addEventListener("click", () => {
-        player.getCurrentState().then(state => {
-
-            playingOrPausedEvents(state);
-        })
-        player.togglePlay();
-    });
-
-    function playingOrPausedEvents(state){
-        if(state.paused){
-            console.log("paused")
-            btnPlay.classList.remove("playing");
-            btnPlay.classList.add("paused");
-            clearInterval(interval);
-        } else {
-            console.log("playing")
-            btnPlay.classList.remove("paused");
-            btnPlay.classList.add("playing");
-            if(state.position < state.duration){
-                interval = setInterval(() => {
-                    player.getCurrentState().then(state => {
-                        durationSlider.value = state.position;
-                    })
-                }, 300)
-            } else {
-                clearInterval(interval);
-                durationSlider.value = 0;
-                btnPlay.classList.remove("playing");
-                btnPlay.classList.add("paused")
-            }
-        }
-    }
-    
     durationSlider.addEventListener("input", () => {
         player.getCurrentState().then(state => {
             if(state){
@@ -162,7 +106,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         })
     })
     
-    player.setVolume(volumeSlider.value / (100 + ((100 - volumeSlider.value) * 2))); // Justeras inte linjärt 0-100 för att ge högre effekt till slidern
     volumeSlider.addEventListener("input", () => {
         player.setVolume(volumeSlider.value / (100 + ((100 - volumeSlider.value) * 2)));
         if(volumeSlider.value > 50){
@@ -176,10 +119,9 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             btnVol.classList.add("no")
         }
     });
-
+    
     btnVol.addEventListener("click", () =>{
         player.setVolume(0);
-        btnVol.className = ""
         btnVol.classList.add("no")
         volumeSlider.value = 0;
     })
@@ -195,18 +137,11 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     btnRepeatTen.addEventListener("click", () => {
         reverseForMs(10000);
     })
+    
+    // Connect to the player!
+    player.connect();
 
-    function reverseForMs(time){
-        player.getCurrentState().then(state => {
-            if(!state){
-                return console.log("Nope");
-            } 
-            if(state.position > time)
-                player.seek(state.position - time);
-            else
-                player.seek(0);
-        })
-    }
+    player.setVolume(volumeSlider.value / (100 + ((100 - volumeSlider.value) * 2)));
 
     function playSong(uri){
         fetch(`https://api.spotify.com/v1/me/player/play?device_id=${id}`, {
@@ -223,10 +158,73 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             clearInterval(interval);
         setTimeout(() => {
             player.getCurrentState().then(state => {
-                console.log(state.duration);
                 durationSlider.setAttribute("max", state.duration);
-                playingOrPausedEvents(state);
+                //playingOrPausedEvents(state);
             })
         }, 300)
     } 
+
+    function playingOrPausedEvents(state){
+        if(state.paused){
+            btnPlay.classList.remove("playing");
+            btnPlay.classList.add("paused");
+            clearInterval(interval);
+        } else {
+            btnPlay.classList.remove("paused");
+            btnPlay.classList.add("playing");
+            if(state.position < state.duration){
+                interval = setInterval(() => {
+                    player.getCurrentState().then(state => {
+                        durationSlider.value = state.position;
+                    })
+                }, 300)
+            } else {
+                clearInterval(interval);
+                durationSlider.value = 0;
+                btnPlay.classList.remove("playing");
+                btnPlay.classList.add("paused")
+            }
+        }
+    }
+
+    function reverseForMs(time){
+        player.getCurrentState().then(state => {
+            if(!state){
+                return console.log("Nope");
+            } 
+            if(state.position > time)
+                player.seek(state.position - time);
+            else
+                player.seek(0);
+        })
+    }
+    
+    function fillTrackOptions(items){
+        for (let i = 0; i < items.length; i++) {
+            const element = items[i];
+            option = document.createElement("li");
+            option.innerHTML = element.name + " - " + element.artists[0].name;
+    
+            option.style.color = "purple";
+            option.addEventListener("click", async () => {
+                const imgContainer = document.getElementById("img-container");
+                imgContainer.innerHTML = "";
+                let img = document.createElement("img");
+                img.setAttribute("height", 200)
+                img.src = element.album.images[1].url;
+                trackUri = element.uri;
+                imgContainer.appendChild(img);
+                playSong(element.uri);
+            })
+    
+            spotifySearch.appendChild(option);
+        }
+    }
+    
+    const fetchTracks = async(track) => {
+        const response = await fetch("/api/spotify/track=" + track);
+        const tracks = await response.json();
+        return tracks;
+    }
+
 };
