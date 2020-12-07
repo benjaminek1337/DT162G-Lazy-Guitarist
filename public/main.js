@@ -213,6 +213,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 img.setAttribute("height", 200)
                 img.src = element.album.images[1].url;
                 trackUri = element.uri;
+                console.log(trackUri);
                 imgContainer.appendChild(img);
                 playSong(element.uri);
             })

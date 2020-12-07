@@ -1,4 +1,3 @@
-const { response } = require("express");
 const express = require("express");
 const router = express.Router();
 const SpotifyWebApi = require("spotify-web-api-node");
@@ -9,6 +8,7 @@ const spotifyApi = new SpotifyWebApi({
     clientSecret: credentials.clientSecret,
     redirectUri: credentials.localhost3000callback
 });
+
 
 // Client Credential grejs, servern autenticerar sig mot spotify då det behövs.
 // Får en access token
@@ -24,6 +24,7 @@ const authenticate = async() => {
 }
 
 // Authorization Code grejs
+// FUNKARE MED res.locals i USER så ersätt localurl mot nått liknande
 let originalUrl;
 router.get("/auth", (req, res) => {
     originalUrl = req.query.url;
@@ -33,25 +34,39 @@ router.get("/auth", (req, res) => {
 });
 
 router.get("/callback", (req, res) => {
-    const code = req.query.code
-
-    spotifyApi.authorizationCodeGrant(code)
-    .then((data) => {
-        spotifyApi.setAccessToken(data.body['access_token']);
-        spotifyApi.setRefreshToken(data.body['refresh_token']);
-        console.log("User authenticated with access code: " + spotifyApi.getAccessToken());
-        res
-            .status(201)
-            .cookie("access_token", spotifyApi.getAccessToken(), {
-                expires: new Date(Date.now() + 1 * 3600000)
-            })
-            .redirect((originalUrl != undefined) ? "/" + originalUrl : "/");
-            originalUrl = "";
+    const code = req.query.code;
+    const error = req.query.error;
+    if(!error){
+        spotifyApi.authorizationCodeGrant(code)
+        .then((data) => {
+                spotifyApi.setAccessToken(data.body['access_token']);
+                spotifyApi.setRefreshToken(data.body['refresh_token']);
+                console.log("User authenticated with access code: " + spotifyApi.getAccessToken());
+                res
+                .status(201)
+                .cookie("access_token", spotifyApi.getAccessToken(), {
+                    expires: new Date(Date.now() + 1 * 3600000)
+                })
+                .redirect((originalUrl != undefined) ? originalUrl : "/");
+                originalUrl = "";
+            }
+        ), (err) => {
+            console.log(err);
         }
-    ), (err) => {
-        console.log(err);
+    } else {
+        console.log("Authentication not approved")
+        res.status(401).redirect((originalUrl != undefined) ? originalUrl : "/")
+        originalUrl = "";
     }
 });
+
+let interval;
+
+authenticate();
+clearInterval(interval);
+interval = setInterval(() => {
+    authenticate();
+}, 3550000)
 
 // Alla calls kollar efter en access token först, finns den inte körs autenticerare. Sen söka
 // mot spotify, returnera outputen
@@ -129,6 +144,5 @@ router.get("/trackUri=:uri", async (req, res) => {
     }
 
 });
-
 
 module.exports = router;
