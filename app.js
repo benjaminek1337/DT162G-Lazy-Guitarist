@@ -18,13 +18,10 @@ app.use(bodyparser.urlencoded({ extended: false }));
 app.use(bodyparser.json());
 
 // Använd CORS
-app.all("/*", (req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Credentials", "true");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    res.header("Access-Control-Allow-Methods", "GET,PUT,PATCH,POST,DELETE");
-    next();
-});
+app.use(cors({origin: [
+    "http://localhost:4200"
+    ], credentials: true
+}));
 
 // Använd Cookie-parser
 //app.use(cookieparser());
@@ -46,7 +43,8 @@ app.use(session({
     saveUninitialized: false,
     secret: "is/a,fakkn:scrt*TOevry1",
     cookie: {
-        sameSite: false,
+        httpOnly: false,
+        sameSite: true,
         secure: IN_PROD
     }
 }));
