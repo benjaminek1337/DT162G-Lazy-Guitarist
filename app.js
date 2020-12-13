@@ -7,8 +7,6 @@ const spotifyRouter = require("./routes/spotify.js")
 const userRouter = require("./routes/user.js")
 const bodyparser = require("body-parser");
 const cors = require("cors");
-//const cookieparser = require("cookie-parser");
-const fetch = require("node-fetch");
     
 // Instansera express
 const app = express();
@@ -23,9 +21,6 @@ app.use(cors({origin: [
     ], credentials: true
 }));
 
-// Använd Cookie-parser
-//app.use(cookieparser());
-    
 // Skapa statisk sökväg
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -55,9 +50,6 @@ app.use("/api/user", userRouter);
     
 // Port för anslutning
 const port = process.env.PORT || 3000;
-
-
-
     
 // Starta servern
 app.listen(port, () => {

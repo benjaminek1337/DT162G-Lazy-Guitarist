@@ -27,6 +27,7 @@ const authenticate = async() => {
 // FUNKARE MED res.locals i USER så ersätt localurl mot nått liknande
 let originalUrl;
 router.get("/auth", (req, res) => {
+    //req.session.redirecturl = req.query.url;
     originalUrl = req.query.url;
     const scopes = ["streaming", "user-read-email", "user-read-private", "user-modify-playback-state"];
     const authUrl = spotifyApi.createAuthorizeURL(scopes)
@@ -34,6 +35,7 @@ router.get("/auth", (req, res) => {
 });
 
 router.get("/callback", (req, res) => {
+    //console.log(req.session.redirecturl)
     const code = req.query.code;
     const error = req.query.error;
     if(!error){
