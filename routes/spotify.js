@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const SpotifyWebApi = require("spotify-web-api-node");
 
+console.log(process.env.CLIENT_ID, process.env.LOCALHOST_3000_CALLBACK)
+
 const spotifyApi = new SpotifyWebApi({
     clientId: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
