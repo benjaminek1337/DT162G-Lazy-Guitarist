@@ -50,9 +50,9 @@ app.use(session({
         sameSite: true,
         secure: process.env.NODE_ENV === "production"
     },
-    store: new mongostore({
-        mongooseConnection: mongoose.connection
-    })
+    // store: new mongostore({
+    //     mongooseConnection: mongoose.connection
+    // })
 }));
 // Använd router
 app.use("/api/db", dbRouter);
