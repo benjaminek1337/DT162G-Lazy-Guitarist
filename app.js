@@ -1,8 +1,8 @@
 // Importer
+const dotenv = require("dotenv");
+dotenv.config();
 if(process.env.NODE_ENV !== "production"){
     // User needs to create own .env file, containing stuffz
-    const dotenv = require("dotenv");
-    dotenv.config();
 }
 const express = require("express");
 const session = require("express-session");
@@ -13,7 +13,6 @@ const userRouter = require("./routes/user.js")
 const bodyparser = require("body-parser");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const { MongoStore } = require("connect-mongo");
 const mongostore = require("connect-mongo")(session);
 
 mongoose.connect(`mongodb+srv://${process.env.DB_CREDENTIALS}@${process.env.DB_URI}?retryWrites=true&w=majority`, {
