@@ -49,8 +49,8 @@ app.use(session({
     secret: "is/a,fakkn:scrt*TOevry1",
     cookie: {
         httpOnly: false,
-        sameSite: strict,
-        secure: false
+        sameSite: false,
+        secure: process.env.NODE_ENV === "production"
     },
     // store: new mongostore({
     //     mongooseConnection: mongoose.connection
