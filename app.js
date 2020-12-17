@@ -13,6 +13,8 @@ const userRouter = require("./routes/user.js")
 const bodyparser = require("body-parser");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const { MongoStore } = require("connect-mongo");
+const mongostore = require("connect-mongo")(session);
 
 mongoose.connect(`mongodb+srv://${process.env.DB_CREDENTIALS}@${process.env.DB_URI}?retryWrites=true&w=majority`, {
     useNewUrlParser: true,
@@ -48,7 +50,10 @@ app.use(session({
         httpOnly: false,
         sameSite: true,
         secure: process.env.NODE_ENV === "production"
-    }
+    },
+    store: new MongoStore({
+        db: mongoose.connection.db
+    })
 }));
 // Använd router
 app.use("/api/db", dbRouter);
