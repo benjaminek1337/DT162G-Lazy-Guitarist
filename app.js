@@ -44,7 +44,7 @@ app.use(cors({origin: [
 
 app.use(session({
     name: "sid",
-    resave: false,
+    resave: true,
     saveUninitialized: false,
     secret: "is/a,fakkn:scrt*TOevry1",
     cookie: {
@@ -52,9 +52,9 @@ app.use(session({
         sameSite: "none",
         secure: process.env.NODE_ENV === "production"
     },
-    // store: new mongostore({
-    //     mongooseConnection: mongoose.connection
-    // })
+    store: new mongostore({
+        mongooseConnection: mongoose.connection
+    })
 }));
 // Använd router
 app.use("/api/db", dbRouter);
