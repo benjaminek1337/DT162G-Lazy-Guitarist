@@ -13,6 +13,7 @@ const userRouter = require("./routes/user.js")
 const bodyparser = require("body-parser");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const { strict } = require("assert");
 const mongostore = require("connect-mongo")(session);
 
 mongoose.connect(`mongodb+srv://${process.env.DB_CREDENTIALS}@${process.env.DB_URI}?retryWrites=true&w=majority`, {
@@ -48,8 +49,8 @@ app.use(session({
     secret: "is/a,fakkn:scrt*TOevry1",
     cookie: {
         httpOnly: false,
-        sameSite: true,
-        secure: process.env.NODE_ENV === "production"
+        sameSite: strict,
+        secure: false
     },
     // store: new mongostore({
     //     mongooseConnection: mongoose.connection
