@@ -1,12 +1,18 @@
+if(process.env.NODE_ENV !== "production"){
+    const dotenv = require("dotenv");
+    dotenv.config();
+}
+
 const express = require("express");
 const router = express.Router();
 const SpotifyWebApi = require("spotify-web-api-node");
-const credentials = require("../data/credentials.json");
+
+console.log(process.env.CLIENT_ID)
 
 const spotifyApi = new SpotifyWebApi({
-    clientId: credentials.clientId,
-    clientSecret: credentials.clientSecret,
-    redirectUri: credentials.localhost3000callback
+    clientId: process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET,
+    redirectUri: process.env.LOCALHOST_3000_CALLBACK
 });
 
 
