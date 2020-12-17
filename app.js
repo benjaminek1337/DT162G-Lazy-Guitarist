@@ -30,13 +30,14 @@ app.use(bodyparser.json());
 // Använd CORS
 app.use(cors({origin: [
     "http://localhost:4200",
-    "https://web.postman.co"
-    // Lägg till heroku!!!
+    "https://web.postman.co",
+    "https://lazyguitarist.great-site.net"
+    // Lägg till webbhosten sen
     ], credentials: true
 }));
 
 // Skapa statisk sökväg KANSKE INTE BEHÖVER PGA INGEN FRONT END HÄR, KANSKE HA I NG SEN
-app.use(express.static(path.join(__dirname, 'public')));
+// app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({
     name: "sid",
