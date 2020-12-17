@@ -45,7 +45,7 @@ app.use(cors({origin: [
 app.use(session({
     name: "sid",
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
     secret: "is/a,fakkn:scrt*TOevry1",
     cookie: {
         httpOnly: false,
