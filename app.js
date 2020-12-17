@@ -28,6 +28,7 @@ const app = express();
 app.use(bodyparser.urlencoded({ extended: false }));
 app.use(bodyparser.json());
 
+app.set('trust proxy', 1)
 // Använd CORS
 app.use(cors({origin: [
     "http://localhost:4200",
