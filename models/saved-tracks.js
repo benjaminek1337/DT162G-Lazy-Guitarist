@@ -5,6 +5,7 @@ const savedTracksSchema = new Schema({
     userId: String,
     trackId: String,
     progress: String,
+    saved: Boolean,
     liked: Boolean,
     disliked: Boolean
 });

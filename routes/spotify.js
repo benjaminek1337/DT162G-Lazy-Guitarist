@@ -1,13 +1,6 @@
-if(process.env.NODE_ENV !== "production"){
-    const dotenv = require("dotenv");
-    dotenv.config();
-}
-
 const express = require("express");
 const router = express.Router();
 const SpotifyWebApi = require("spotify-web-api-node");
-
-console.log(process.env.CLIENT_ID)
 
 const spotifyApi = new SpotifyWebApi({
     clientId: process.env.CLIENT_ID,
@@ -152,5 +145,22 @@ router.get("/trackUri=:uri", async (req, res) => {
     }
 
 });
+
+// async function getTrackByUri(trackId){
+//     if(!spotifyApi.getAccessToken()){
+//         await authenticate();
+//     }
+//     try {
+//         spotifyApi.getTrack(uri)
+//         .then((data) => {
+//             console.log("Searched for: " + trackId);
+//             return data.body;
+//         }, (err) => {
+//             console.log('Something went wrong!', err);
+//         });   
+//     } catch (error) {
+//         console.log(error);
+//     }
+// }
 
 module.exports = router;

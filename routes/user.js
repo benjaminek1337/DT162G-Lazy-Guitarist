@@ -1,10 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
+const https = require("https");
 const Users = require("../models/users.js");
 const Tracks = require("../models/tracks.js")
 const SavedTracks = require("../models/saved-tracks.js");
-const LikedTracks = require("../models/liked-tracks.js");
 
 const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/;
@@ -129,29 +129,28 @@ router.put("/changecredentials", async (req, res) => {
     }
 });
 
-async function createNewTrack(trackId, artist, track, album){
-    // Localhost, ändra till skarp vid prod
-    if(process.env)
-    fetch("http://localhost:3000/api/")
+async function saveNewTrackToDB(trackId, artist, title, album, liked, disliked){
 
     const newTrack = new Tracks();
-    newTrack.track = track;
+    newTrack.track = title;
     newTrack.artist = artist;
     newTrack.album = album;
     newTrack.trackId = trackId;
-    newTrack.likes = 0;
-    newTrack.dislikes = 0;
+    newTrack.likes = (liked) ? 1 : 0;
+    newTrack.dislikes = (disliked) ? 1 : 0;
     newTrack.save();
     console.log("Track saved")
+    
 }
 
-async function saveTrackForUser(trackId, userId){
+async function saveUserTrackToDB(trackId, userId, saved, liked, disliked){
     const savedTrack = new SavedTracks();
     savedTrack.userId = userId;
     savedTrack.trackId = trackId;
     savedTrack.progress = "Vill lära mig";
-    savedTrack.liked = false;
-    savedTrack.disliked = false;
+    savedTrack.saved = saved;
+    savedTrack.liked = liked;
+    savedTrack.disliked = disliked;
     savedTrack.save();
     console.log("Saved track for user");
 }
@@ -164,42 +163,52 @@ router.post("/savetrack", async (req, res) => {
     }
     if(!trackExists){
         try {
-            await createNewTrack(trackId, artist, track, album);
+            await saveNewTrackToDB(trackId, artist, track, album, false, false);
         } catch (error) {
             res.status(500).send();
         }
     }
-    const savedTrackExists = await SavedTracks.exists({trackId: trackId, userId: req.session.userId});
-    if(!savedTrackExists){
+    const savedTrack = await SavedTracks.findOne({trackId: trackId, userId: req.session.userId}).exec();
+    if(!savedTrack){
         try {
-            await saveTrackForUser(trackId, req.session.userId);
+            await saveUserTrackToDB(trackId, req.session.userId, true, false, false);
             res.status(200).send("Spår sparat");
         } catch (error) {
-            res.status(500).send();
+           return res.status(500).send();
         }
     } else {
+        if(!savedTrack.saved){
+            try {
+                await SavedTracks.findOneAndUpdate({trackId: trackId, userId: req.session.userId}, 
+                    {$set:{
+                        saved: true
+                        }
+                    },
+                    {new: true}, (err, data) => {
+                        if(err){
+                            return res.status(500).send("Error: " + err)
+                        }
+                    });
+                    return res.status(200).send("Spår sparat")
+            } catch (error) {
+                res.status(500).send();
+            }
+        }
         res.status(400).send("Du har ju redan sparat spåret, lustigkurre.");
     }
 });
 
 router.put("/ratetrack", async (req, res) => {
-    const { trackId, liked, disliked } = req.body;
-    const trackExists = await Tracks.exists({trackId: trackId});
+    const { trackId, liked, disliked, track, artist, album } = req.body;
+    
     if(!req.session.userId){
         return res.status(500).send("Serverfel. Prova logga in och ut.")
     }
-    if(!trackExists){ // Fixa det här att det kraschar om man rejtar innan man sparat spåret
-        try {
-            let artist, track, album; // HÄMTA DESSA FRÅN NÅNSTANS
-            await createNewTrack(trackId, artist, track, album);
-        } catch (error) {
-            res.status(500).send();
-        }
-    }
+    
     const savedTrackExists = await SavedTracks.exists({trackId: trackId, userId: req.session.userId});
     if(!savedTrackExists){
         try {
-            await saveTrackForUser(trackId, req.session.userId);
+            await saveUserTrackToDB(trackId, req.session.userId, false, liked, disliked);
         } catch (error) {
             res.status(500).send();
         }
@@ -220,44 +229,54 @@ router.put("/ratetrack", async (req, res) => {
             res.status(500).send();
         }
     }
-    try {
-        await Tracks.findOneAndUpdate({trackId: trackId}, 
-        {$set:{
-            likes: await getLikes(trackId), 
-            dislikes: await getDislikes(trackId)}
-        },
-        {new: true}, (err, data) => {
-            if(err){
-                return res.status(500).send("Error: " + err)
-            }
-        });
-        res.status(200).send(liked);
-        console.log("Rating completed");
-    } catch (error) {
-        res.status(500).send();
+
+    const trackExists = await Tracks.exists({trackId: trackId});
+    if(!trackExists){
+        console.log(savedTrackExists)
+        try {
+            await saveNewTrackToDB(trackId, artist, track, album, liked, disliked);
+            console.log("Rating completed");
+            res.status(200).send(liked)
+        } catch (error) {
+            res.status(500).send();
+        }
+    } else {
+        try {
+            await Tracks.findOneAndUpdate({trackId: trackId}, 
+            {$set:{
+                likes: (!savedTrackExists && liked) ? (await getCurrentLikes(trackId) + 1) : await getLikes(trackId), 
+                dislikes: (!savedTrackExists && disliked) ? (await getCurrentDisikes(trackId) + 1) : await getDislikes(trackId)}
+            },
+            {new: true}, (err, data) => {
+                if(err){
+                    return res.status(500).send("Error: " + err)
+                }
+            });
+            console.log("Rating completed");
+            res.status(200).send(liked)
+        } catch (error) {
+            res.status(500).send();
+        }
     }
 });
 
-async function getLikes(id){
-    //let likes = 0;
+async function getCurrentLikes(id){
+    const track = await Tracks.findOne({trackId: id}).exec();
+    return track.likes;
+}
 
-    const likedTracks = await LikedTracks.find({trackId: id, liked: true}).exec();
-    // for (let i = 0; i < likedTracks.length; i++) {
-    //     const element = likedTracks[i];
-    //     if(element.liked)
-    //         likes += 1;
-    // }
+async function getCurrentDisikes(id){
+    const track = await Tracks.findOne({trackId: id}).exec();
+    return track.dislikes;
+}
+
+async function getLikes(id){
+    const likedTracks = await SavedTracks.find({trackId: id, liked: true}).exec();
     return likedTracks.length;
 };
 
 async function getDislikes(id){
-    // let dislikes = 0;
-    const dislikedTracks = await LikedTracks.find({trackId: id, disliked: true}).exec();
-    // for (let i = 0; i < likedTracks.length; i++) {
-    //     const element = likedTracks[i];
-    //     if(element.disliked)
-    //         dislikes += 1;
-    // }
+    const dislikedTracks = await SavedTracks.find({trackId: id, disliked: true}).exec();
     return dislikedTracks.length;
 };
 
@@ -275,6 +294,41 @@ router.put("/progression", async (req, res) => {
         });
         console.log("Progression updated");
         res.status(200).send("Progression uppdaterad");
+    } catch (error) {
+        res.status(500).send();
+    }
+});
+
+router.get("/savedtracks", async (req, res) => {
+    try {
+        SavedTracks.aggregate([
+            { $match: {userId: req.session.userId, saved: true}},
+            {
+                "$lookup": {
+                    "from": "tracks",
+                    "localField": "trackId",
+                    "foreignField": "trackId",
+                    "as": "tracks"
+                }
+            },
+            { "$unwind": "$tracks" },
+            {
+                "$project": {
+                    "tracks.trackId": 1,
+                    "tracks.track": 1,
+                    "tracks.artist": 1,
+                    "tracks.album":1,
+                    "progress":1
+                }
+            }
+        ]).exec((err, data) => {
+            if(err) {
+                return res.status(400).json({error: err});
+            } else if (data.length == 0) {
+                return res.status(400).json({message: "Du har inte sparat några spår än..."})
+            }
+            res.json(data);
+        });
     } catch (error) {
         res.status(500).send();
     }
@@ -313,11 +367,15 @@ router.get("/likedtrack=:trackId", async (req, res) => {
 router.delete("/savedtrack/:trackId", async (req, res) => {
     const trackId = req.params.trackId;
     try {
-        SavedTracks.findByIdAndDelete({trackId: trackId, userId: req.session.userId}, (err) => {
-            if(err){
-                return res.status(400).send(err);
-            } 
-            res.status(200).send("Spår raderat");
+        SavedTracks.findOneAndUpdate({trackId: trackId, userId: req.session.userId}, 
+            {$set:{
+                saved: false}
+            },
+            {new: true}, (err, data) => {
+                if(err){
+                    return res.status(500).send("Error: " + err)
+                }
+            res.status(200).send("Spår raderat")
         });
     } catch (error) {
         res.status(500).send();

@@ -1,8 +1,8 @@
 // Importer
 if(process.env.NODE_ENV !== "production"){
+    // User needs to create own .env file, containing stuffz
     const dotenv = require("dotenv");
     dotenv.config();
-    console.log(process.env.NODE_ENV, process.env.CLIENT_SECRET)
 }
 const express = require("express");
 const session = require("express-session");
@@ -14,7 +14,7 @@ const bodyparser = require("body-parser");
 const cors = require("cors");
 const mongoose = require("mongoose");
 
-mongoose.connect(`mongodb+srv://${process.env.MONGO_CREDENTIALS}@${process.env.MONGO_URI}?retryWrites=true&w=majority`, {
+mongoose.connect(`mongodb+srv://${process.env.DB_CREDENTIALS}@${process.env.DB_URI}?retryWrites=true&w=majority`, {
     useNewUrlParser: true,
     useCreateIndex: true, 
     useUnifiedTopology: true 
@@ -38,12 +38,6 @@ app.use(cors({origin: [
 // Skapa statisk sökväg KANSKE INTE BEHÖVER PGA INGEN FRONT END HÄR, KANSKE HA I NG SEN
 app.use(express.static(path.join(__dirname, 'public')));
 
-const {
-    NODE_ENV = "development",
-} = process.env
-
-const IN_PROD = NODE_ENV === "production"
-
 app.use(session({
     name: "sid",
     resave: false,
@@ -52,7 +46,7 @@ app.use(session({
     cookie: {
         httpOnly: false,
         sameSite: true,
-        secure: IN_PROD
+        secure: process.env.NODE_ENV === "production"
     }
 }));
 // Använd router
