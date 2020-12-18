@@ -74,10 +74,10 @@ app.use("/api/spotify", spotifyRouter);
 app.use("/api/user", userRouter);
 
 if(process.env.NODE_ENV === "production"){
-    app.use(express.static('public'));
+    app.use(express.static('public/lasy-guitarist-client'));
     app.get('*', (req, res) => {
         res.sendFile(
-            path.resolve(__dirname, 'public', 'index.html')
+            path.resolve(__dirname, 'public', "lazy-guitarist-client",  'index.html')
         );
     });
 }
