@@ -36,27 +36,17 @@ app.set('trust proxy', 1)
 //     credentials: true
 // }));
 
-const ALLOWED_ORIGINS = [
-    'https://lazyguitarist.herokuapp.com/',
-    'http://localhost:3000'
-  ]
 
 app.all("/*", (req, res, next) => {
     res.set('Access-Control-Allow-Credentials', 'true');
-    res.set('Access-Control-Allow-Origin', "https://lazyguitarist.herokuapp.com/");
+    if(process.env.NODE_ENV === "production")
+        res.set('Access-Control-Allow-Origin', "https://lazyguitarist.herokuapp.com/");
+    else
+        res.set('Access-Control-Allow-Origin', "http://localhost:4200");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     res.header("Access-Control-Allow-Methods", "GET,PUT,PATCH,POST,DELETE");
     next();
 });
-
-
-// Skapa statisk sökväg
-// app.use(express.static(path.join(__dirname, 'public')));
-
-// app.get('/register', (req, res) => {
-//     res.sendFile(path.join(__dirname + 'public/index.html'));
-// });
-
 
 app.use(session({
     name: "sid",
