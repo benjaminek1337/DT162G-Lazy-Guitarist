@@ -29,28 +29,38 @@ const app = express();
 app.use(bodyparser.urlencoded({ extended: false }));
 app.use(bodyparser.json());
 
-app.set('trust proxy', 1)
+//app.set('trust proxy', 1)
 // Använd CORS
-app.use(cors({origin: [
-    "http://localhost:4200",
-    "https://web.postman.co",
-    "https://lazyguitarist.great-site.net"
-    // Lägg till webbhosten sen
-    ], credentials: true
-}));
+// app.use(cors({origin: [
+//     "http://localhost:4200",
+//     "https://web.postman.co",
+//     "https://lazyguitarist.great-site.net"
+//     // Lägg till webbhosten sen
+//     ], 
+//     credentials: true,
+//     exposedHeaders:['*', 'Authorization']
+// }));
+
+app.use(function(req, res, next) {
+    res.header('Access-Control-Allow-Credentials', true);
+    res.header('Access-Control-Allow-Origin', req.headers.origin);
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+    res.header('Access-Control-Allow-Headers', 'X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept');
+    next();
+});
 
 // Skapa statisk sökväg KANSKE INTE BEHÖVER PGA INGEN FRONT END HÄR, KANSKE HA I NG SEN
 // app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({
     name: "sid",
-    resave: false,
+    resave: true,
     saveUninitialized: false,
     secret: "is/a,fakkn:scrt*TOevry1",
     cookie: {
-        httpOnly: true,
+        httpOnly: false,
         sameSite: "none",
-        secure: false //process.env.NODE_ENV === "production"
+        secure: process.env.NODE_ENV === "production"
     },
     store: new mongostore({
         mongooseConnection: mongoose.connection
