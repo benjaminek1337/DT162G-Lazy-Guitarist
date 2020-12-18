@@ -46,7 +46,7 @@ app.use(session({
     secret: "is/a,fakkn:scrt*TOevry1",
     cookie: {
         httpOnly: false,
-        sameSite: "none",
+        sameSite: strict,
         secure: process.env.NODE_ENV === "production"
     },
     store: new mongostore({
