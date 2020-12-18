@@ -60,7 +60,7 @@ app.use(session({
     secret: "is/a,fakkn:scrt*TOevry1",
     cookie: {
         httpOnly: false,
-        sameSite: "strict",
+        sameSite: true,
         secure: process.env.NODE_ENV === "production"
     },
     store: new mongostore({
@@ -73,6 +73,7 @@ app.use("/api/db", dbRouter);
 app.use("/api/spotify", spotifyRouter);
 app.use("/api/user", userRouter);
 
+console.log(process.env.NODE_ENV)
 if(process.env.NODE_ENV === "production"){
     app.use(express.static('public'));
     app.get('*', (req, res) => {
