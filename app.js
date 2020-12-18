@@ -81,11 +81,6 @@ if(process.env.NODE_ENV === "production"){
             path.resolve(__dirname, 'public', 'index.html')
         );
     });
-    app.get('/song/*', (req, res) => {
-        res.sendFile(
-            path.resolve(__dirname, 'public', 'index.html')
-        );
-    });
 }
     
 // Port för anslutning
