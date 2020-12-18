@@ -14,6 +14,11 @@ const isValidEmail = (email) => {
     return false;
 }
 
+/* ANGULAR MAIN ROUTE */
+router.get('*', function(req, res) {
+    res.sendFile('./public/index.html');
+});
+
 router.post("/register", async (req, res) => {
 
     const user = new Users();

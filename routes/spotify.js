@@ -22,6 +22,10 @@ const authenticate = async() => {
     }
 }
 
+router.get('*', function(req, res) {
+    res.sendFile('./public/index.html');
+});
+
 // Authorization Code grejs
 // FUNKARE MED res.locals i USER så ersätt localurl mot nått liknande
 let originalUrl;
