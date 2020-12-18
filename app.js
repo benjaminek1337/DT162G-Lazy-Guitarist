@@ -50,7 +50,7 @@ app.use(session({
     cookie: {
         httpOnly: true,
         sameSite: "none",
-        secure: process.env.NODE_ENV === "production"
+        secure: false //process.env.NODE_ENV === "production"
     },
     store: new mongostore({
         mongooseConnection: mongoose.connection
