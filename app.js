@@ -11,7 +11,12 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const mongostore = require("connect-mongo")(session);
 
-mongoose.connect(`mongodb+srv://${process.env.DB_CREDENTIALS}@${process.env.DB_URI}?retryWrites=true&w=majority`, {
+const dbConnectionString = (process.env.NODE_ENV === "production") 
+? `mongodb+srv://${process.env.DB_CREDENTIALS}@${process.env.DB_URI}?retryWrites=true&w=majority` 
+: "mongodb://localhost:27017/lazyguitarist-local";
+
+
+mongoose.connect(dbConnectionString, {
     useNewUrlParser: true,
     useCreateIndex: true, 
     useUnifiedTopology: true 
