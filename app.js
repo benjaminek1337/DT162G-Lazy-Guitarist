@@ -44,11 +44,11 @@ app.use(cors({origin: [
 
 app.use(session({
     name: "sid",
-    resave: true,
+    resave: false,
     saveUninitialized: false,
     secret: "is/a,fakkn:scrt*TOevry1",
     cookie: {
-        httpOnly: false,
+        httpOnly: true,
         sameSite: "none",
         secure: process.env.NODE_ENV === "production"
     },
