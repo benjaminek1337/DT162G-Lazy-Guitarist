@@ -80,7 +80,7 @@ if(process.env.NODE_ENV === "production"){
         // res.sendFile(
         //     path.resolve(__dirname, 'public', 'index.html')
         // );
-        res.sendFile("./public/index.html");
+        res.sendFile(__dirname + "/public/index.html");
     });
 }
     
