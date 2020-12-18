@@ -9,7 +9,6 @@ const bodyparser = require("body-parser");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const mongostore = require("connect-mongo")(session);
-const proxy = require("http-proxy-middleware");
 
 mongoose.connect(`mongodb+srv://${process.env.DB_CREDENTIALS}@${process.env.DB_URI}?retryWrites=true&w=majority`, {
     useNewUrlParser: true,
@@ -17,13 +16,6 @@ mongoose.connect(`mongodb+srv://${process.env.DB_CREDENTIALS}@${process.env.DB_U
     useUnifiedTopology: true 
 });
 
-const proxyOptions = {
-    target: "https://lazyguitarist.herokuapp.com",
-    changeOrigin: true,
-    secure: true
-};
-
-const appProxy = proxy(proxyOptions);
 // Instansera express
 const app = express();
 
@@ -44,7 +36,7 @@ app.use(cors({origin: [
 }));
 
 // Skapa statisk sökväg KANSKE INTE BEHÖVER PGA INGEN FRONT END HÄR, KANSKE HA I NG SEN
-// app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({
     name: "sid",
@@ -60,8 +52,6 @@ app.use(session({
         mongooseConnection: mongoose.connection
     })
 }));
-
-app.use("/api", appProxy)
 
 // Använd router
 app.use("/api/db", dbRouter);
