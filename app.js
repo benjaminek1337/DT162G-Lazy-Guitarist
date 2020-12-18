@@ -30,11 +30,19 @@ app.set('trust proxy', 1)
 app.use(cors({origin: [
     "http://localhost:4200",
     "https://web.postman.co",
-    "https://lazyguitarist.great-site.net"
-    // Lägg till webbhosten sen
+    "https://lazyguitarist.great-site.net",
+    "https://lazyguitarist.herokuapp.com"
     ], 
     credentials: true
 }));
+
+// app.all("/*", (req, res, next) => {
+//     res.header("Access-Control-Allow-Origin", "*");
+//     res.header("Access-Control-Allow-Credentials", "true");
+//     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+//     res.header("Access-Control-Allow-Methods", "GET,PUT,PATCH,POST,DELETE");
+//     next();
+// });
 
 // Skapa statisk sökväg KANSKE INTE BEHÖVER PGA INGEN FRONT END HÄR, KANSKE HA I NG SEN
 app.use(express.static(path.join(__dirname, 'public')));
