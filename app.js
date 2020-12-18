@@ -1,27 +1,29 @@
 // Importer
-const dotenv = require("dotenv");
-dotenv.config();
-if(process.env.NODE_ENV !== "production"){
-    // User needs to create own .env file, containing stuffz
-}
+require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
-const path = require("path");
 const dbRouter = require("./routes/db.js");
 const spotifyRouter = require("./routes/spotify.js")
 const userRouter = require("./routes/user.js")
 const bodyparser = require("body-parser");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const { strict } = require("assert");
 const mongostore = require("connect-mongo")(session);
+const proxy = require("http-proxy-middleware");
 
 mongoose.connect(`mongodb+srv://${process.env.DB_CREDENTIALS}@${process.env.DB_URI}?retryWrites=true&w=majority`, {
     useNewUrlParser: true,
     useCreateIndex: true, 
     useUnifiedTopology: true 
 });
-    
+
+const proxyOptions = {
+    target: "https://lazyguitarist.herokuapp.com",
+    changeOrigin: true,
+    secure: true
+};
+
+const appProxy = proxy(proxyOptions);
 // Instansera express
 const app = express();
 
@@ -29,25 +31,17 @@ const app = express();
 app.use(bodyparser.urlencoded({ extended: false }));
 app.use(bodyparser.json());
 
-//app.set('trust proxy', 1)
-// Använd CORS
-// app.use(cors({origin: [
-//     "http://localhost:4200",
-//     "https://web.postman.co",
-//     "https://lazyguitarist.great-site.net"
-//     // Lägg till webbhosten sen
-//     ], 
-//     credentials: true,
-//     exposedHeaders:['*', 'Authorization']
-// }));
+app.set('trust proxy', 1)
 
-app.use(function(req, res, next) {
-    res.header('Access-Control-Allow-Credentials', true);
-    res.header('Access-Control-Allow-Origin', req.headers.origin);
-    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-    res.header('Access-Control-Allow-Headers', 'X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept');
-    next();
-});
+//Använd CORS
+app.use(cors({origin: [
+    "http://localhost:4200",
+    "https://web.postman.co",
+    "https://lazyguitarist.great-site.net"
+    // Lägg till webbhosten sen
+    ], 
+    credentials: true
+}));
 
 // Skapa statisk sökväg KANSKE INTE BEHÖVER PGA INGEN FRONT END HÄR, KANSKE HA I NG SEN
 // app.use(express.static(path.join(__dirname, 'public')));
@@ -66,6 +60,9 @@ app.use(session({
         mongooseConnection: mongoose.connection
     })
 }));
+
+app.use("/api", appProxy)
+
 // Använd router
 app.use("/api/db", dbRouter);
 app.use("/api/spotify", spotifyRouter);
