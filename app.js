@@ -51,10 +51,10 @@ app.all("/*", (req, res, next) => {
 
 // Skapa statisk sökväg KANSKE INTE BEHÖVER PGA INGEN FRONT END HÄR, KANSKE HA I NG SEN
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(path.join(__dirname,"/register")));
-app.use((req, res) => {
-  res.sendFile(path.join(__dirname, 'public/index.html'));
-});
+// app.use(express.static(path.join(__dirname,"/register")));
+// app.use((req, res) => {
+//   res.sendFile(path.join(__dirname, 'public/index.html'));
+// });
 
 app.use(session({
     name: "sid",
