@@ -36,9 +36,14 @@ app.set('trust proxy', 1)
 //     credentials: true
 // }));
 
+const ALLOWED_ORIGINS = [
+    'https://lazyguitarist.herokuapp.com/',
+    'http://localhost:3000'
+  ]
+
 app.all("/*", (req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "https://lazyguitarist.herokuapp.com/");
-    res.header("Access-Control-Allow-Credentials", "true");
+    res.set('Access-Control-Allow-Credentials', 'true');
+    res.set('Access-Control-Allow-Origin', "https://lazyguitarist.herokuapp.com/");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     res.header("Access-Control-Allow-Methods", "GET,PUT,PATCH,POST,DELETE");
     next();
@@ -46,9 +51,10 @@ app.all("/*", (req, res, next) => {
 
 // Skapa statisk sökväg KANSKE INTE BEHÖVER PGA INGEN FRONT END HÄR, KANSKE HA I NG SEN
 app.use(express.static(path.join(__dirname, 'public')));
-// app.use((req, res) => {
-//     res.sendFile(path.join(__dirname, 'public/index.html'));
-//   });
+app.use(express.static(path.join(__dirname,"/register")));
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, 'public/index.html'));
+});
 
 app.use(session({
     name: "sid",
