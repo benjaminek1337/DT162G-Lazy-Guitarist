@@ -49,16 +49,24 @@ app.all("/*", (req, res, next) => {
     next();
 });
 
-// Skapa statisk sökväg KANSKE INTE BEHÖVER PGA INGEN FRONT END HÄR, KANSKE HA I NG SEN
-app.use(express.static(path.join(__dirname, 'public')));
-// app.use(express.static(path.join(__dirname,"/register")));
-// app.use((req, res) => {
-//   res.sendFile(path.join(__dirname, 'public/index.html'));
-// }); 
+require("./routes")(app);
 
-app.get('/register', (req, res) => {
-    res.sendFile(path.join(__dirname + 'public/index.html'));
-});
+if(process.env.NODE_ENV === "production"){
+    app.use(express.static('client/build'));
+    app.get('*', (req, res) => {
+        res.sendFile(
+            path.resolve(__dirname, 'client', 'build', 'index.html')
+        );
+    });
+}
+
+
+// Skapa statisk sökväg
+// app.use(express.static(path.join(__dirname, 'public')));
+
+// app.get('/register', (req, res) => {
+//     res.sendFile(path.join(__dirname + 'public/index.html'));
+// });
 
 
 app.use(session({
