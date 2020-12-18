@@ -49,17 +49,6 @@ app.all("/*", (req, res, next) => {
     next();
 });
 
-require("./routes")(app);
-
-if(process.env.NODE_ENV === "production"){
-    app.use(express.static('client/build'));
-    app.get('*', (req, res) => {
-        res.sendFile(
-            path.resolve(__dirname, 'client', 'build', 'index.html')
-        );
-    });
-}
-
 
 // Skapa statisk sökväg
 // app.use(express.static(path.join(__dirname, 'public')));
@@ -88,6 +77,15 @@ app.use(session({
 app.use("/api/db", dbRouter);
 app.use("/api/spotify", spotifyRouter);
 app.use("/api/user", userRouter);
+
+if(process.env.NODE_ENV === "production"){
+    app.use(express.static('client/build'));
+    app.get('*', (req, res) => {
+        res.sendFile(
+            path.resolve(__dirname, 'client', 'build', 'index.html')
+        );
+    });
+}
     
 // Port för anslutning
 const port = process.env.PORT || 3000;
