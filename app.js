@@ -4,12 +4,15 @@ const path = require("path");
 const express = require("express");
 const session = require("express-session");
 const dbRouter = require("./routes/db.js");
-const spotifyRouter = require("./routes/spotify.js")
-const userRouter = require("./routes/user.js")
+const spotifyRouter = require("./routes/spotify.js");
+const userRouter = require("./routes/user.js");
+const youtubeRouter = require("./routes/youtube.js")
 const bodyparser = require("body-parser");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const mongostore = require("connect-mongo")(session);
+
+// INFOR PROD - LÄGG TILL YOUTUBE API NYCKEL SOM ENV VARIABEL
 
 const dbConnectionString = (process.env.NODE_ENV === "production") 
 ? `mongodb+srv://${process.env.DB_CREDENTIALS}@${process.env.DB_URI}?retryWrites=true&w=majority` 
@@ -55,14 +58,16 @@ app.all("/*", (req, res, next) => {
 
 app.use(session({
     name: "sid",
-    resave: true,
+    resave: false,
     saveUninitialized: false,
-    secret: "is/a,fakkn:scrt*TOevry1",
+    secret: "itts/a,b!g:scrt*TOevry1",
     cookie: {
+        maxAge: 3600000*24*7,
         httpOnly: false,
         sameSite: true,
         secure: process.env.NODE_ENV === "production"
     },
+    rolling: true,
     store: new mongostore({
         mongooseConnection: mongoose.connection
     })
@@ -72,8 +77,8 @@ app.use(session({
 app.use("/api/db", dbRouter);
 app.use("/api/spotify", spotifyRouter);
 app.use("/api/user", userRouter);
+app.use("/api/youtube", youtubeRouter)
 
-console.log(process.env.NODE_ENV)
 if(process.env.NODE_ENV === "production"){
     app.use(express.static(`${__dirname}/public`));
     app.get('*', (req, res) => {
@@ -89,5 +94,5 @@ const port = process.env.PORT || 3000;
     
 // Starta servern
 app.listen(port, () => {
-    console.log("Server running on port " + port);
+    console.log(process.env.NODE_ENV + " Server running on port " + port);
 });

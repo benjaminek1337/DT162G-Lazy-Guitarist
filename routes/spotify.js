@@ -12,13 +12,17 @@ const spotifyApi = new SpotifyWebApi({
 // Client Credential grejs, servern autenticerar sig mot spotify då det behövs.
 // Får en access token
 const authenticate = async() => {
-    await spotifyApi.clientCredentialsGrant()
-    .then((data) => {
-        spotifyApi.setAccessToken(data.body['access_token']);
-        console.log("Authenticated");
-    }),
-    (err) => {
-        console.log("Sumtin done goofed... error: " + err);
+    try {
+        await spotifyApi.clientCredentialsGrant()
+        .then((data) => {
+            spotifyApi.setAccessToken(data.body['access_token']);
+            console.log("Authenticated");
+        }),
+        (err) => {
+            console.log("Sumtin done goofed... error: " + err);
+        }
+    } catch (error) {
+        console.log("Spotify auth failed: Error: " + error);
     }
 }
 
