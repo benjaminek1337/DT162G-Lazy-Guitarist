@@ -7,6 +7,7 @@ router.get("/search=:q", (req, res) => {
         google.youtube("v3").search.list({
             key: process.env.YOUTUBE_API_KEY,
             part: "snippet",
+            maxResults: 20,
             q: req.params.q + " lesson"
         }).then(response => {
             const { data } = response;
