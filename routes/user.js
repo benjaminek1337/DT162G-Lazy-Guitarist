@@ -1,3 +1,4 @@
+// Importer
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
@@ -5,7 +6,9 @@ const https = require("https");
 const Users = require("../models/users.js");
 const Tracks = require("../models/tracks.js")
 const SavedTracks = require("../models/saved-tracks.js");
+const LikedTracks = require("../models/liked-tracks.js");
 
+// Enklare funktion för att validera e-postadress
 const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/;
     if(emailRegex.test(email)){
@@ -14,8 +17,8 @@ const isValidEmail = (email) => {
     return false;
 }
 
+// Registrera ny användare, hasha pw, spara till db, returnera användarinfo som JSON
 router.post("/register", async (req, res) => {
-
     const user = new Users();
     try{
         const { email, password, repeatPassword} = req.body;
@@ -42,8 +45,8 @@ router.post("/register", async (req, res) => {
     }
 });
 
+// Logga in, jämföra inmatat pw mot hashat i db, skapa user-session, skicka användarinfo genom JSON
 router.post("/login", async (req, res) => {
-
     try {
         if(req.session.userId){
             return res.status(200).json({id: user._id, email: user.email, username: user.username});
@@ -64,17 +67,18 @@ router.post("/login", async (req, res) => {
     }
 });
 
+// Ta bort user-session
 router.post("/logout", (req, res) => {
     req.session.destroy(err => {
         if(err) {
             return res.status(500).send("Somethings gone terrybli wröng: " + err);
         }
-        //console.log(req.query.url)
         res.clearCookie("sid");
-        res.status(200).send("200"); // Redirecta till ursprungsurl
+        res.status(200).send("200");
     })
 });
 
+// Hämta användare via user-sessionid, skicka användardata via JSON
 router.get("/getuser", async (req, res) => {
     const user = await Users.findOne({_id: req.session.userId}).exec();
     if(user){
@@ -84,6 +88,7 @@ router.get("/getuser", async (req, res) => {
     }
 });
 
+// Kolla att lösenorden matchar, byt lösenord, spara till DB
 router.put("/changepassword", async (req, res) => {
     const { oldPassword, newPassword, repeatPassword } = req.body;
     const user = await Users.findOne({_id: req.session.userId}).exec();
@@ -109,6 +114,7 @@ router.put("/changepassword", async (req, res) => {
     }
 });
 
+// Byt användarinformation, spara till DB
 router.put("/changecredentials", async (req, res) => {
     const { email, username } = req.body;
     try {
@@ -129,8 +135,38 @@ router.put("/changecredentials", async (req, res) => {
     }
 });
 
-async function saveNewTrackToDB(trackId, artist, title, album, liked, disliked){
+router.delete("/deleteuser", async (req, res) => {
+    try {
+        Users.findByIdAndDelete(req.session.userId, (err, data) => {
+            if(err){
+                console.log("Kunde inte radera användare")
+                return status(500).send()
+            }
+            console.log("User deleted")
+        })
+        SavedTracks.deleteMany({userId :req.session.userId}, (err, data) => {
+            if(err){
+                console.log("Kunde inte radera spåren")
+                return status(500).send()
+            }
+            console.log("Users tracks deleted")
+        });
+        req.session.destroy(err => {
+            if(err) {
+                return res.status(500).send("Somethings gone terrybli wröng: " + err);
+            }
+            res.clearCookie("sid");
+            console.log("User session terminated")
+            return res.status(200).send("200");
+        })
+        
+    } catch (error) {
+        return status(500).send();
+    }
+});
 
+// Funktion för att spara ett spår till DB
+async function saveNewTrackToDB(trackId, artist, title, album, liked, disliked){
     const newTrack = new Tracks();
     newTrack.track = title;
     newTrack.artist = artist;
@@ -140,21 +176,30 @@ async function saveNewTrackToDB(trackId, artist, title, album, liked, disliked){
     newTrack.dislikes = (disliked) ? 1 : 0;
     newTrack.save();
     console.log("Track saved")
-    
 }
 
-async function saveUserTrackToDB(trackId, userId, saved, liked, disliked){
+// Funktion för att spara ett spår till användare
+async function saveUserTrackToDB(trackId, userId, saved){
     const savedTrack = new SavedTracks();
     savedTrack.userId = userId;
     savedTrack.trackId = trackId;
     savedTrack.progress = "Vill lära mig";
     savedTrack.saved = saved;
-    savedTrack.liked = liked;
-    savedTrack.disliked = disliked;
     savedTrack.save();
     console.log("Saved track for user");
 }
 
+async function saveLikedTrackToDB(trackId, userId, liked, disliked){
+    const likedTrack = new LikedTracks();
+    likedTrack.userId = userId;
+    likedTrack.trackId = trackId;
+    likedTrack.liked = liked;
+    likedTrack.disliked = disliked;
+    likedTrack.save();
+    console.log("User rated track");
+}
+
+// Sparar valt spår till db, samt sparar spåret till en post kopplat till användar-id
 router.post("/savetrack", async (req, res) => {
     const { trackId, track, artist, album } = req.body;
     const trackExists = await Tracks.exists({trackId: trackId});
@@ -171,7 +216,7 @@ router.post("/savetrack", async (req, res) => {
     const savedTrack = await SavedTracks.findOne({trackId: trackId, userId: req.session.userId}).exec();
     if(!savedTrack){
         try {
-            await saveUserTrackToDB(trackId, req.session.userId, true, false, false);
+            await saveUserTrackToDB(trackId, req.session.userId, true);
             res.status(200).send("Spår sparat");
         } catch (error) {
            return res.status(500).send();
@@ -198,6 +243,7 @@ router.post("/savetrack", async (req, res) => {
     }
 });
 
+// Sparar betygssättning som databaspost, kopplat till användar-id. Och om spår ej sparat i db, spara spåret
 router.put("/ratetrack", async (req, res) => {
     const { trackId, liked, disliked, track, artist, album } = req.body;
     
@@ -205,16 +251,16 @@ router.put("/ratetrack", async (req, res) => {
         return res.status(500).send("Serverfel. Prova logga in och ut.")
     }
     
-    const savedTrackExists = await SavedTracks.exists({trackId: trackId, userId: req.session.userId});
-    if(!savedTrackExists){
+    const likedTrackExists = await LikedTracks.exists({trackId: trackId, userId: req.session.userId});
+    if(!likedTrackExists){
         try {
-            await saveUserTrackToDB(trackId, req.session.userId, false, liked, disliked);
+            await saveLikedTrackToDB(trackId, req.session.userId, liked, disliked);
         } catch (error) {
             res.status(500).send();
         }
     } else {
         try {
-            await SavedTracks.findOneAndUpdate({trackId: trackId, userId: req.session.userId}, 
+            await LikedTracks.findOneAndUpdate({trackId: trackId, userId: req.session.userId}, 
                 {$set:{
                     liked: liked, 
                     disliked: disliked
@@ -232,10 +278,9 @@ router.put("/ratetrack", async (req, res) => {
 
     const trackExists = await Tracks.exists({trackId: trackId});
     if(!trackExists){
-        console.log(savedTrackExists)
         try {
             await saveNewTrackToDB(trackId, artist, track, album, liked, disliked);
-            console.log("Rating completed");
+            console.log("Rated new track");
             res.status(200).send(liked)
         } catch (error) {
             res.status(500).send();
@@ -244,15 +289,15 @@ router.put("/ratetrack", async (req, res) => {
         try {
             await Tracks.findOneAndUpdate({trackId: trackId}, 
             {$set:{
-                likes: (!savedTrackExists && liked) ? (await getCurrentLikes(trackId) + 1) : await getLikes(trackId), 
-                dislikes: (!savedTrackExists && disliked) ? (await getCurrentDisikes(trackId) + 1) : await getDislikes(trackId)}
+                likes: (!likedTrackExists && liked) ? (await getCurrentLikes(trackId) + 1) : await getLikes(trackId), 
+                dislikes: (!likedTrackExists && disliked) ? (await getCurrentDisikes(trackId) + 1) : await getDislikes(trackId)}
             },
             {new: true}, (err, data) => {
                 if(err){
-                    return res.status(500).send("Error: " + err)
+                    return res.status(500).send("Error: " + err);
                 }
             });
-            console.log("Rating completed");
+            console.log("Rating updated");
             res.status(200).send(liked)
         } catch (error) {
             res.status(500).send();
@@ -260,26 +305,31 @@ router.put("/ratetrack", async (req, res) => {
     }
 });
 
+// Hämtar antalet likes till ett givet spår
 async function getCurrentLikes(id){
     const track = await Tracks.findOne({trackId: id}).exec();
     return track.likes;
 }
 
+// Hämtar antalet dislikes till ett givet spår
 async function getCurrentDisikes(id){
     const track = await Tracks.findOne({trackId: id}).exec();
     return track.dislikes;
 }
 
+// Sammanställer alla likes till ett spår
 async function getLikes(id){
-    const likedTracks = await SavedTracks.find({trackId: id, liked: true}).exec();
+    const likedTracks = await LikedTracks.find({trackId: id, liked: true}).exec();
     return likedTracks.length;
 };
 
+// Sammanställer alla dislikes till ett spår
 async function getDislikes(id){
-    const dislikedTracks = await SavedTracks.find({trackId: id, disliked: true}).exec();
+    const dislikedTracks = await LikedTracks.find({trackId: id, disliked: true}).exec();
     return dislikedTracks.length;
 };
 
+// Sparar användarens progression på ett spår till DB
 router.put("/progression", async (req, res) => {
     const { trackId, progress } = req.body;
     try {
@@ -299,6 +349,7 @@ router.put("/progression", async (req, res) => {
     }
 });
 
+// Hämtar användares sparade spår
 router.get("/savedtracks", async (req, res) => {
     try {
         SavedTracks.aggregate([
@@ -334,6 +385,7 @@ router.get("/savedtracks", async (req, res) => {
     }
 });
 
+// Hämtar ett spår kopplat till spårets ID
 router.get("/track=:trackId", async (req, res) => {
     const trackId = req.params.trackId;
     try {
@@ -344,6 +396,7 @@ router.get("/track=:trackId", async (req, res) => {
     }
 });
 
+// Hämtar ett sparat spår kopplat till spårets ID
 router.get("/savedtrack=:trackId", async (req, res) => {
     const trackId = req.params.trackId;
     try {
@@ -354,6 +407,7 @@ router.get("/savedtrack=:trackId", async (req, res) => {
     }
 });
 
+// Hämtar ett gillat spår med spårets ID
 router.get("/likedtrack=:trackId", async (req, res) => {
     const trackId = req.params.trackId;
     try {
@@ -364,14 +418,11 @@ router.get("/likedtrack=:trackId", async (req, res) => {
     }
 });
 
+// Raderar ett sparat spår kopplat till spårets id
 router.delete("/savedtrack/:trackId", async (req, res) => {
     const trackId = req.params.trackId;
     try {
-        SavedTracks.findOneAndUpdate({trackId: trackId, userId: req.session.userId}, 
-            {$set:{
-                saved: false}
-            },
-            {new: true}, (err, data) => {
+        SavedTracks.findOneAndDelete({trackId: trackId, userId: req.session.userId}, (err, data) => {
                 if(err){
                     return res.status(500).send("Error: " + err)
                 }

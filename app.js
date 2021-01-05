@@ -3,7 +3,6 @@ require("dotenv").config();
 const path = require("path");
 const express = require("express");
 const session = require("express-session");
-const dbRouter = require("./routes/db.js");
 const spotifyRouter = require("./routes/spotify.js");
 const userRouter = require("./routes/user.js");
 const youtubeRouter = require("./routes/youtube.js")
@@ -14,11 +13,12 @@ const mongostore = require("connect-mongo")(session);
 
 // INFOR PROD - LÄGG TILL YOUTUBE API NYCKEL SOM ENV VARIABEL
 
+// Connectionsträng till mongodb
 const dbConnectionString = (process.env.NODE_ENV === "production") 
 ? `mongodb+srv://${process.env.DB_CREDENTIALS}@${process.env.DB_URI}?retryWrites=true&w=majority` 
 : "mongodb://localhost:27017/lazyguitarist-local";
 
-
+// Anslut till mongoDB
 mongoose.connect(dbConnectionString, {
     useNewUrlParser: true,
     useCreateIndex: true, 
@@ -44,7 +44,7 @@ app.set('trust proxy', 1)
 //     credentials: true
 // }));
 
-
+// Konfigurera CORS-inställningar
 app.all("/*", (req, res, next) => {
     res.set('Access-Control-Allow-Credentials', 'true');
     if(process.env.NODE_ENV === "production")
@@ -56,11 +56,12 @@ app.all("/*", (req, res, next) => {
     next();
 });
 
+// Konfigurera och använd session-cookie
 app.use(session({
     name: "sid",
     resave: false,
     saveUninitialized: false,
-    secret: "itts/a,b!g:scrt*TOevry1",
+    secret: "owa5y=ueif(/&DCSAC/(#sdfi78f&))9fjesiurhf/(/Y/(GUH%&/UH",
     cookie: {
         maxAge: 3600000*24*7,
         httpOnly: false,
@@ -74,11 +75,11 @@ app.use(session({
 }));
 
 // Använd router
-app.use("/api/db", dbRouter);
 app.use("/api/spotify", spotifyRouter);
 app.use("/api/user", userRouter);
 app.use("/api/youtube", youtubeRouter)
 
+// Möjliggör SPA-routing när applikationen är i produktion
 if(process.env.NODE_ENV === "production"){
     app.use(express.static(`${__dirname}/public`));
     app.get('*', (req, res) => {
@@ -94,5 +95,5 @@ const port = process.env.PORT || 3000;
     
 // Starta servern
 app.listen(port, () => {
-    console.log(process.env.NODE_ENV + " Server running on port " + port);
+    console.log(`Server running on port ${port} in a ${process.env.NODE_ENV} environment`);
 });

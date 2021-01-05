@@ -6,8 +6,6 @@ const savedTracksSchema = new Schema({
     trackId: String,
     progress: String,
     saved: Boolean,
-    liked: Boolean,
-    disliked: Boolean
 });
 
 module.exports = mongoose.model("SavedTracks", savedTracksSchema);
