@@ -11,7 +11,8 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const mongostore = require("connect-mongo")(session);
 
-// INFOR PROD - LÄGG TILL YOUTUBE API NYCKEL SOM ENV VARIABEL
+// INFOR PROD - LÄGG TILL YOUTUBE API NYCKEL SOM ENV VARIABEL I HEROKU
+// FÖRSÖK MED BACKENDVALIDERING FÖR ATT NÅ PROFILSIDAN
 
 // Connectionsträng till mongodb
 const dbConnectionString = (process.env.NODE_ENV === "production") 
@@ -33,16 +34,6 @@ app.use(bodyparser.urlencoded({ extended: false }));
 app.use(bodyparser.json());
 
 app.set('trust proxy', 1)
-
-//Använd CORS
-// app.use(cors({origin: [
-//     "http://localhost:4200",
-//     "https://web.postman.co",
-//     "https://lazyguitarist.great-site.net",
-//     "https://lazyguitarist.herokuapp.com"
-//     ], 
-//     credentials: true
-// }));
 
 // Konfigurera CORS-inställningar
 app.all("/*", (req, res, next) => {

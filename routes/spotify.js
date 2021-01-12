@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const SpotifyWebApi = require("spotify-web-api-node");
+const Playlists = require("../models/playlists.js")
 
-const spotifyApi = new SpotifyWebApi({
+const spotifyApi = new SpotifyWebApi({ // Skapar ett spotify-webAPI objekt
     clientId: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
     redirectUri: process.env.LOCALHOST_3000_CALLBACK
@@ -37,6 +38,7 @@ router.get("/auth", (req, res) => {
     res.redirect(authUrl);
 });
 
+// Får en authkod från spotify, skapar en cookie och skickar den till klient
 router.get("/callback", (req, res) => {
     //console.log(req.session.redirecturl)
     const code = req.query.code;
@@ -44,12 +46,10 @@ router.get("/callback", (req, res) => {
     if(!error){
         spotifyApi.authorizationCodeGrant(code)
         .then((data) => {
-                spotifyApi.setAccessToken(data.body['access_token']);
-                spotifyApi.setRefreshToken(data.body['refresh_token']);
-                console.log("User authenticated with access code: " + spotifyApi.getAccessToken());
+                console.log("User authenticated with access code: " + data.body['access_token']);
                 res
                 .status(201)
-                .cookie("access_token", spotifyApi.getAccessToken(), {
+                .cookie("access_token", data.body['access_token'], {
                     expires: new Date(Date.now() + 1 * 3600000)
                 })
                 .redirect((originalUrl != undefined) ? originalUrl : "/");
@@ -69,29 +69,12 @@ let interval;
 
 authenticate();
 clearInterval(interval);
-interval = setInterval(() => {
+interval = setInterval(() => { // Intervall som refreshar serverns authentication token mot spotify strax innan den går ut
     authenticate();
 }, 3550000)
 
 // Alla calls kollar efter en access token först, finns den inte körs autenticerare. Sen söka
-// mot spotify, returnera outputen
-
-// Sök artist och spår från artist
-router.get("/artist=:artist&track=:track", async (req, res) => {
-    if(!spotifyApi.getAccessToken()){
-        await authenticate();
-    }
-    let output;
-    spotifyApi.searchTracks(`track:${req.params.track} artist:${req.params.artist}`)
-    .then((data) => {
-        output = data.body;
-        console.log(data.body);
-        res.send(output);
-    }, (err) => {
-        console.log('Something went wrong!', err);
-    });
-    
-});
+// mot spotifys API, returnera outputen
 
 // Sök spår med titel
 router.get("/track=:track", async (req, res) => {
@@ -112,25 +95,7 @@ router.get("/track=:track", async (req, res) => {
     }
 });
 
-// Sök artist
-router.get("/artist=:artist", async (req, res) => {
-    if(!spotifyApi.getAccessToken()){
-        await authenticate();
-    }
-    try {
-        const artist = req.params.artist;
-        spotifyApi.searchArtists(artist, {limit : 3})
-        .then((data) => {
-            console.log("Searched for: " + artist);
-            res.send(data.body);
-        }, (err) => {
-            console.log('Something went wrong!', err);
-        });     
-    } catch (error) {
-        console.log(error);
-    }
-});
-
+// Hämta ett spår baserat på id
 router.get("/trackUri=:uri", async (req, res) => {
     if(!spotifyApi.getAccessToken()){
         await authenticate();
@@ -150,21 +115,81 @@ router.get("/trackUri=:uri", async (req, res) => {
 
 });
 
-// async function getTrackByUri(trackId){
-//     if(!spotifyApi.getAccessToken()){
-//         await authenticate();
-//     }
-//     try {
-//         spotifyApi.getTrack(uri)
-//         .then((data) => {
-//             console.log("Searched for: " + trackId);
-//             return data.body;
-//         }, (err) => {
-//             console.log('Something went wrong!', err);
-//         });   
-//     } catch (error) {
-//         console.log(error);
-//     }
-// }
+// Hämta spellista från spotify genom spellistans Id
+router.get("/playlist=:id", async (req, res) => {
+    if(!spotifyApi.getAccessToken()){
+        await authenticate();
+    }
+    try {
+        const id = req.params.id;
+        spotifyApi.getPlaylist(id)
+        .then((data) => {
+            console.log("Retrieved playlist from id: " + id);
+            res.send(data.body);
+        }, (err) => {
+            console.log('Something went wrong!', err);
+        });   
+    } catch (error) {
+        console.log(error);
+    }
+}),
+
+// Spara spellista till DB
+// Kommer att implementeras senare
+router.post("/db-playlist", async (req, res) => {
+    const { playlistId, name } = req.body;
+    const playlist = new Playlists();
+    try {
+        playlist.playlistId = playlistId;
+        playlist.name = name;
+        playlist.save();
+        console.log("Playlist saved");
+        res.status(200).send("Playlist saved");
+    } catch (error) {
+        res.status(500).send();
+    }
+});
+
+// Hämta en spellista från DB baserat på ID
+router.get("/db-playlist=:id", async (req, res) => {
+    const id = req.params.id;
+    try {
+        const playlist = await Playlists.findOne({ playlistId: id }).exec();
+        res.status(200).json(playlist);
+    } catch (error) {
+        res.status(500).send();
+    }
+});
+
+// Hämta alla spellistor från DB
+// Kommer att implementeras senare
+router.get("db-playlists", (req, res) => {
+    try {
+        Playlists.find((err, Playlists) => {
+            if(err){
+                return res.status(400).send(err);
+            }
+            res.status(200).json(Playlists);
+        })
+    } catch (error) {
+        res.status(500).send();
+    }
+});
+
+// Ta bort en spellista från DB baserat på ID
+// Kommer att implementeras senare
+router.delete("/db-playlist=:id", async (req, res) => {
+    const id = req.params.id;
+    try {
+        Playlists.findOneAndDelete({playlistId: id}, (err, data) => {
+                if(err){
+                    return res.status(500).send("Error: " + err)
+                }
+            res.status(200).send("Spellista raderad")
+        });
+    } catch (error) {
+        res.status(500).send();
+    }
+});
 
 module.exports = router;

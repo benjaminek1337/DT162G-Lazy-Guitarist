@@ -71,7 +71,7 @@ router.post("/login", async (req, res) => {
 router.post("/logout", (req, res) => {
     req.session.destroy(err => {
         if(err) {
-            return res.status(500).send("Somethings gone terrybli wröng: " + err);
+            return res.status(500).send();
         }
         res.clearCookie("sid");
         res.status(200).send("200");
@@ -135,6 +135,7 @@ router.put("/changecredentials", async (req, res) => {
     }
 });
 
+// Radera användare och användarens sparade låtar
 router.delete("/deleteuser", async (req, res) => {
     try {
         Users.findByIdAndDelete(req.session.userId, (err, data) => {

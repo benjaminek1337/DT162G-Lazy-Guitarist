@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { google } = require("googleapis");
 
+// Hämta en lista med data om youtubevideor utifrån en söksträng mot Youtubes API
 router.get("/search=:q", (req, res) => {
     try {
         google.youtube("v3").search.list({
